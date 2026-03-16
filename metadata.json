@@ -1,0 +1,5 @@
+{
+  "name": "PlantCare AI",
+  "description": "Aplicación para el análisis y diagnóstico del estado de las plantas mediante IA.",
+  "requestFramePermissions": ["camera"]
+}
