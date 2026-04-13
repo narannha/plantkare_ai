@@ -1,5 +1,5 @@
 {
-  "name": "PlantCare AI",
-  "description": "Aplicación para el análisis y diagnóstico del estado de las plantas mediante IA.",
+  "name": "BloomMind",
+  "description": "Supera el bloqueo mental creativo con la sabiduría de las plantas y la aromaterapia. Diseñado para creativos.",
   "requestFramePermissions": ["camera"]
 }

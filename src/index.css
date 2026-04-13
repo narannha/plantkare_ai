@@ -1,1 +1,21 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap');
 @import "tailwindcss";
+
+@theme {
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  
+  --color-navy-deep: #1e2b58;
+  --color-lime-vibrant: #d4ff59;
+  --color-pink-vibrant: #ff79c6;
+  --color-blue-vibrant: #7db1ff;
+  --color-star-yellow: #fff200;
+}
+
+body {
+  background-color: #f0f4ff;
+  color: #1e2b58;
+}
+
+.font-black {
+  font-weight: 900;
+}
