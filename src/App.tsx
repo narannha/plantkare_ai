@@ -1,6 +1,11 @@
 import { useState, useRef, useEffect, useCallback, ReactNode } from 'react';
 import { Camera, History, Sparkles, Wind, Brain, Activity, RefreshCw, Palette, Coffee, User, Home, Settings, Layout, Languages, LogOut, UserPlus, Calendar } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { GoogleGenAI, Type } from "@google/genai";
+
+// WARNING: Client-side API key usage is intended for demo/prototyping purposes only.
+// If deploying to production, please implement a backend to proxy API requests and secure the key.
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 // --- Types ---
 type CreativeState = 'flow' | 'fog' | 'drought' | 'storm';
@@ -476,17 +481,86 @@ export default function App() {
     }
   };
 
-  const handleScan = () => {
+  const handleScan = async () => {
     if (!capturedImage) return;
     setIsScanning(true);
-    setTimeout(() => {
-      setIsScanning(false);
-      const newAura = generateMockAura(capturedImage);
+
+    try {
+      // Extract base64 completely without the prefix
+      const base64Data = capturedImage.split(',')[1];
+      
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: {
+          parts: [
+            {
+              inlineData: {
+                data: base64Data,
+                mimeType: "image/jpeg",
+              },
+            },
+            {
+              text: "Analyze the facial expression, environment, and overall vibe of this image of a creative person. Base your answer strictly on 4 statuses related to creative block: 'flow' (Saturated Mind - active, slightly chaotic but brilliant), 'fog' (Mental Fog - confused, distracted, unsure), 'drought' (Total Block, Low Energy - tired, frustrated, blank stare), or 'storm' (Excess Pressure - intense, perfect-seeking, stressed). Then estimate their focusLevel (1-100), moodLevel (1-100), blockLevel (1-100), serenity (1-100), and energy (1-100). Return ONLY A VALID JSON MATCHING THIS EXACT SCHEMA AND NOTHING ELSE.",
+            },
+          ],
+        },
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              status: {
+                type: Type.STRING,
+                description: "Must be exactly one of: 'flow', 'fog', 'drought', 'storm'",
+              },
+              focusLevel: { type: Type.INTEGER },
+              moodLevel: { type: Type.INTEGER },
+              blockLevel: { type: Type.INTEGER },
+              serenity: { type: Type.INTEGER },
+              energy: { type: Type.INTEGER },
+            },
+            required: ["status", "focusLevel", "moodLevel", "blockLevel", "serenity", "energy"],
+          },
+        },
+      });
+
+      const parsedJson = JSON.parse(response.text || '{}');
+      const validStatuses = ['flow', 'fog', 'drought', 'storm'];
+      const determinedStatus = validStatuses.includes(parsedJson.status) ? parsedJson.status : 'fog';
+
+      const days = ['21 Mon', '22 Tue', '23 Wed', '24 Thu', '25 Fri', '26 Sat'];
+      const randomDayStr = days[Math.floor(Math.random() * days.length)];
+      const randomDayNum = parseInt(randomDayStr.split(' ')[0]);
+
+      const newAura: AuraState = {
+        id: Date.now().toString(),
+        date: randomDayStr,
+        day: randomDayNum,
+        status: determinedStatus,
+        focusLevel: parsedJson.focusLevel || 50,
+        moodLevel: parsedJson.moodLevel || 50,
+        blockLevel: parsedJson.blockLevel || 50,
+        serenity: parsedJson.serenity || 50,
+        energy: parsedJson.energy || 50,
+        imageUrl: capturedImage
+      };
+
       setCurrentAura(newAura);
       setHistory(prev => [newAura, ...prev]);
       setActiveTab('diagnosis');
       setCapturedImage(null);
-    }, 3000);
+
+    } catch (error) {
+      console.error("AI Analysis failed:", error);
+      // Fallback to random if API fails
+      const fallbackAura = generateMockAura(capturedImage);
+      setCurrentAura(fallbackAura);
+      setHistory(prev => [fallbackAura, ...prev]);
+      setActiveTab('diagnosis');
+      setCapturedImage(null);
+    } finally {
+      setIsScanning(false);
+    }
   };
 
   const toggleLang = () => setLang(prev => prev === 'en' ? 'es' : 'en');
