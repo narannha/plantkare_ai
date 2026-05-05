@@ -1,0 +1,42 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isSignedIn() { return request.auth != null; }
+
+    function isValidAuraEntry(data, expectedUserId) {
+        let hasCoreKeys = data.keys().hasAll(['status', 'focusLevel', 'moodLevel', 'blockLevel', 'serenity', 'energy', 'date', 'day', 'userId', 'createdAt']);
+        let isValidStatus = data.status in ['flow', 'fog', 'drought', 'storm'];
+        let numCheck = data.focusLevel is number && data.moodLevel is number && data.blockLevel is number && data.serenity is number && data.energy is number && data.day is number && data.createdAt is number;
+        let strCheck = data.date is string && data.date.size() <= 64 && data.userId is string && data.userId.size() <= 128;
+        let imgCheck = !('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() <= 10485760); // Allow up to 10MB strings for safety
+        let sizeCheck = data.keys().size() == 10 || (data.keys().hasAll(['imageUrl']) && data.keys().size() == 11);
+
+        return hasCoreKeys && isValidStatus && numCheck && strCheck && imgCheck && sizeCheck && data.userId == expectedUserId;
+    }
+
+    match /users/{userId}/auras/{auraId} {
+        allow get, list, delete: if isSignedIn() && isValidId(userId) && userId == request.auth.uid;
+        allow create: if isSignedIn() && isValidId(userId) && isValidId(auraId) && userId == request.auth.uid && isValidAuraEntry(incoming(), request.auth.uid);
+        allow update: if isSignedIn() && isValidId(userId) && userId == request.auth.uid && isValidAuraEntry(incoming(), request.auth.uid);
+    }
+
+    match /users/{userId}/tracker/{dateId} {
+        allow get, list, delete: if isSignedIn() && isValidId(userId) && userId == request.auth.uid;
+        allow create, update: if isSignedIn() && isValidId(userId) && isValidId(dateId) && userId == request.auth.uid 
+            && incoming().keys().hasAll(['status', 'updatedAt'])
+            && incoming().status in ['flow', 'fog', 'drought']
+            && incoming().updatedAt is number;
+    }
+  }
+}

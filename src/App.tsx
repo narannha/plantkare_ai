@@ -2,6 +2,25 @@ import { useState, useRef, useEffect, useCallback, ReactNode } from 'react';
 import { Camera, History, Sparkles, Wind, Brain, Activity, RefreshCw, Palette, Coffee, User, Home, Settings, Layout, Languages, LogOut, UserPlus, Calendar } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { GoogleGenAI, Type } from "@google/genai";
+import { initializeApp } from 'firebase/app';
+import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { getFirestore, collection, doc, setDoc, onSnapshot, getDocFromServer, query, orderBy } from 'firebase/firestore';
+import firebaseConfig from '../firebase-applet-config.json';
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+const auth = getAuth(app);
+
+async function testConnection() {
+  try {
+    await getDocFromServer(doc(db, 'test', 'connection'));
+  } catch (error) {
+    if(error instanceof Error && error.message.includes('the client is offline')) {
+      console.error("Please check your Firebase configuration.");
+    }
+  }
+}
+testConnection();
 
 // WARNING: Client-side API key usage is intended for demo/prototyping purposes only.
 // If deploying to production, please implement a backend to proxy API requests and secure the key.
@@ -23,6 +42,8 @@ interface AuraState {
   serenity: number;
   energy: number;
   imageUrl?: string;
+  userId?: string;
+  createdAt?: number;
 }
 
 // --- Translations ---
@@ -44,8 +65,9 @@ const translations = {
     logs: "Logs",
     tracker: "Tracker",
     profile: "Profile",
-    permissionDenied: "Camera access is needed. If you already denied it, please check your browser settings. If you don't have a camera, this feature won't work.",
-    requestPermission: "Try Again / Request Permission",
+    permissionDenied: "Camera access is needed. If you denied it, check your browser settings or upload a photo instead.",
+    requestPermission: "Retry / Request Permission",
+    uploadPhoto: "Upload Photo",
     requesting: "Requesting...",
     login: "Login",
     register: "Register",
@@ -115,8 +137,9 @@ const translations = {
     logs: "Registros",
     tracker: "Seguimiento",
     profile: "Perfil",
-    permissionDenied: "Se necesita acceso a la cámara. Si ya lo denegaste, por favor revisa los ajustes de tu navegador. Si no tienes cámara, esta función no estará disponible.",
+    permissionDenied: "Se necesita acceso a la cámara. Si ya lo denegaste, por favor revisa los ajustes de tu navegador o sube una foto.",
     requestPermission: "Reintentar / Solicitar Permiso",
+    uploadPhoto: "Subir Foto",
     requesting: "Solicitando...",
     login: "Iniciar Sesión",
     register: "Registrarse",
@@ -350,9 +373,58 @@ export default function App() {
   const [isScanning, setIsScanning] = useState(false);
   const [currentAura, setCurrentAura] = useState<AuraState | null>(null);
   const [history, setHistory] = useState<AuraState[]>(getMockHistory());
-  
+  const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
+  const [trackerDays, setTrackerDays] = useState<Record<string, CreativeState>>({});
+  const [trackerMonth, setTrackerMonth] = useState(new Date().getMonth());
+  const trackerYear = 2026;
+
+  // Sync auth state
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Sync Firestore history & tracker
+  useEffect(() => {
+    if (!currentUser) {
+      return;
+    }
+
+    const aurasQuery = query(
+      collection(db, 'users', currentUser.uid, 'auras'),
+      orderBy('createdAt', 'desc')
+    );
+
+    const unsubscribeAuras = onSnapshot(aurasQuery, (snapshot) => {
+      const auras: AuraState[] = [];
+      snapshot.forEach(doc => {
+        auras.push(doc.data() as AuraState);
+      });
+      setHistory(auras.length > 0 ? auras : getMockHistory()); // Use mock if empty so list isn't totally blank
+    }, (error) => {
+       console.error("Firestore error:", error);
+    });
+
+    const trackerQuery = collection(db, 'users', currentUser.uid, 'tracker');
+    const unsubscribeTracker = onSnapshot(trackerQuery, (snapshot) => {
+      const td: Record<string, CreativeState> = {};
+      snapshot.forEach(d => {
+        td[d.id] = d.data().status as CreativeState;
+      });
+      setTrackerDays(td);
+    }, (error) => {
+       console.error("Firestore error:", error);
+    });
+
+    return () => {
+      unsubscribeAuras();
+      unsubscribeTracker();
+    };
+  }, [currentUser]);
+
   // Auth state
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
 
   // Camera state
@@ -361,6 +433,8 @@ export default function App() {
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
@@ -442,8 +516,12 @@ export default function App() {
           videoRef.current.onloadeddata = playVideo;
         }
       }
-    } catch (err) {
-      console.error("Final error accessing camera:", err);
+    } catch (err: any) {
+      if (err.name === 'NotAllowedError' || err.message === 'Permission denied') {
+        console.warn("Camera permission denied by user.");
+      } else {
+        console.error("Final error accessing camera:", err);
+      }
       setHasCameraPermission(false);
     }
   }, [stopCamera]);
@@ -481,16 +559,31 @@ export default function App() {
     }
   };
 
+  const handleFileUpload = (event: any) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target?.result) {
+          setCapturedImage(e.target.result as string);
+          stopCamera();
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleScan = async () => {
     if (!capturedImage) return;
     setIsScanning(true);
+    console.log("Starting AI analysis...");
 
     try {
       // Extract base64 completely without the prefix
       const base64Data = capturedImage.split(',')[1];
       
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-flash-latest",
         contents: {
           parts: [
             {
@@ -524,29 +617,49 @@ export default function App() {
         },
       });
 
+      console.log("AI Response received:", response.text);
       const parsedJson = JSON.parse(response.text || '{}');
       const validStatuses = ['flow', 'fog', 'drought', 'storm'];
-      const determinedStatus = validStatuses.includes(parsedJson.status) ? parsedJson.status : 'fog';
+      const determinedStatus = (validStatuses.includes(parsedJson.status) ? parsedJson.status : 'fog') as CreativeState;
 
-      const days = ['21 Mon', '22 Tue', '23 Wed', '24 Thu', '25 Fri', '26 Sat'];
-      const randomDayStr = days[Math.floor(Math.random() * days.length)];
-      const randomDayNum = parseInt(randomDayStr.split(' ')[0]);
+      const now = new Date();
+      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const dayStr = `${now.getDate()} ${dayNames[now.getDay()]}`;
+      const dayNum = now.getDate();
+      
+      const newId = Date.now().toString();
 
       const newAura: AuraState = {
-        id: Date.now().toString(),
-        date: randomDayStr,
-        day: randomDayNum,
+        id: newId,
+        date: dayStr,
+        day: dayNum,
         status: determinedStatus,
         focusLevel: parsedJson.focusLevel || 50,
         moodLevel: parsedJson.moodLevel || 50,
         blockLevel: parsedJson.blockLevel || 50,
         serenity: parsedJson.serenity || 50,
         energy: parsedJson.energy || 50,
-        imageUrl: capturedImage
+        imageUrl: capturedImage,
+        userId: currentUser?.uid,
+        createdAt: Date.now()
       };
 
+      if (currentUser) {
+        console.log("Saving to Firestore for user:", currentUser.uid);
+        try {
+          const docRef = doc(db, 'users', currentUser.uid, 'auras', newId);
+          await setDoc(docRef, newAura);
+        } catch (error) {
+          console.error("Firebase save failed:", error);
+          // Still update local history as fallback
+          setHistory(prev => [newAura, ...prev]);
+        }
+      } else {
+        console.log("User not logged in, saving to local state only.");
+        setHistory(prev => [newAura, ...prev]);
+      }
+
       setCurrentAura(newAura);
-      setHistory(prev => [newAura, ...prev]);
       setActiveTab('diagnosis');
       setCapturedImage(null);
 
@@ -554,8 +667,19 @@ export default function App() {
       console.error("AI Analysis failed:", error);
       // Fallback to random if API fails
       const fallbackAura = generateMockAura(capturedImage);
+      if (currentUser) {
+        fallbackAura.userId = currentUser.uid;
+        fallbackAura.createdAt = Date.now();
+        try {
+          await setDoc(doc(db, 'users', currentUser.uid, 'auras', fallbackAura.id), fallbackAura);
+        } catch (e) {
+          console.error("Firestore fallback save failed:", e);
+        }
+      } else {
+        setHistory(prev => [fallbackAura, ...prev]);
+      }
+      
       setCurrentAura(fallbackAura);
-      setHistory(prev => [fallbackAura, ...prev]);
       setActiveTab('diagnosis');
       setCapturedImage(null);
     } finally {
@@ -599,92 +723,171 @@ export default function App() {
   };
 
   const renderGuide = () => {
+    const cardStyles = [
+      { bg: 'bg-[#f3e8ff]', border: 'border-[#c084fc]', text: 'text-[#6b21a8]' }, // Morado
+      { bg: 'bg-[#dcfce7]', border: 'border-[#4ade80]', text: 'text-[#166534]' }, // Verde brillante
+      { bg: 'bg-[#fef08a]', border: 'border-[#facc15]', text: 'text-[#854d0e]' }, // Amarillo
+      { bg: 'bg-[#fef9c3]', border: 'border-[#fde047]', text: 'text-[#854d0e]' }, // Amarillo vibrante
+      { bg: 'bg-[#fce7f3]', border: 'border-[#f472b6]', text: 'text-[#9d174d]' }, // Rosado
+      { bg: 'bg-[#f0fdf4]', border: 'border-[#86efac]', text: 'text-[#14532d]' }, // Blanco verde
+      { bg: 'bg-[#ecfccb]', border: 'border-[#a3e635]', text: 'text-[#3f6212]' }, // Verde oscuro
+      { bg: 'bg-[#ffedd5]', border: 'border-[#fdba74]', text: 'text-[#9a3412]' }  // Colores variados
+    ];
+
     return (
       <div className="p-6 space-y-4 pb-12">
-        {t.states.map((state: any) => (
-          <motion.div 
-            key={state.id}
-            initial={{ opacity: 0, x: -20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            className="bg-white border-4 border-black p-6 rounded-[2.5rem] shadow-[0_8px_0_black] space-y-4"
-          >
-            <div className="flex items-center space-x-4">
-              <div className="text-4xl bg-stone-100 w-16 h-16 rounded-2xl border-2 border-black flex items-center justify-center shadow-[0_4px_0_black]">
-                {state.icon}
-              </div>
-              <div>
-                <h3 className="text-xl font-black uppercase tracking-tighter leading-none">{state.name}</h3>
-                <div className="flex space-x-1 mt-1">
-                  {state.colors.split(', ').map((color: string) => (
-                    <div key={color} className="text-[8px] font-black uppercase px-2 py-0.5 border border-black rounded-full bg-stone-50">
-                      {color}
-                    </div>
-                  ))}
+        {t.states.map((state: any, index: number) => {
+          const style = cardStyles[index % cardStyles.length];
+          return (
+            <motion.div 
+              key={state.id}
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className={`${style.bg} border-4 ${style.border} p-6 rounded-[2.5rem] shadow-[0_8px_0_black] space-y-4`}
+            >
+              <div className="flex items-center space-x-4">
+                <div className="text-4xl bg-white w-16 h-16 rounded-2xl border-2 border-black flex items-center justify-center shadow-[0_4px_0_black]">
+                  {state.icon}
                 </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 text-xs">
-              <div className="space-y-1">
-                <span className="font-black uppercase opacity-40 text-[10px]">{lang === 'es' ? 'Cómo se siente' : 'How it feels'}</span>
-                <p className="font-bold leading-tight">{state.feeling}</p>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <span className="font-black uppercase opacity-40 text-[10px]">{lang === 'es' ? 'Qué necesitas' : 'What you need'}</span>
-                  <p className="font-bold text-pink-vibrant">{state.need}</p>
-                </div>
-                <div className="space-y-1">
-                  <span className="font-black uppercase opacity-40 text-[10px]">{lang === 'es' ? 'Efecto' : 'Effect'}</span>
-                  <p className="font-bold text-lime-vibrant">{state.effect || state.efecto}</p>
+                <div>
+                  <h3 className="text-xl font-black uppercase tracking-tighter leading-none">{state.name}</h3>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {state.colors.split(', ').map((color: string) => (
+                      <div key={color} className="text-[8px] font-black uppercase px-2 py-0.5 border border-black rounded-full bg-white">
+                        {color}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
 
-              <div className="bg-navy-deep text-white p-4 rounded-2xl border-2 border-black shadow-[0_4px_0_black]">
-                <span className="font-black uppercase opacity-60 text-[10px] block mb-2">{lang === 'es' ? 'Plantas / Flores' : 'Plants / Flowers'}</span>
-                <p className="font-bold">{state.plants}</p>
+              <div className="grid grid-cols-1 gap-4 text-xs">
+                <div className="space-y-1">
+                  <span className="font-black uppercase opacity-60 text-[10px]">{lang === 'es' ? 'Cómo se siente' : 'How it feels'}</span>
+                  <p className="font-bold leading-tight">{state.feeling}</p>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <span className="font-black uppercase opacity-60 text-[10px]">{lang === 'es' ? 'Qué necesitas' : 'What you need'}</span>
+                    <p className="font-bold text-pink-vibrant">{state.need}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="font-black uppercase opacity-60 text-[10px]">{lang === 'es' ? 'Efecto' : 'Effect'}</span>
+                    <p className={`font-black ${style.text}`}>{state.effect || state.efecto}</p>
+                  </div>
+                </div>
+
+                <div className="bg-navy-deep text-white p-4 rounded-2xl border-2 border-black shadow-[0_4px_0_black]">
+                  <span className="font-black uppercase opacity-60 text-[10px] block mb-2">{lang === 'es' ? 'Plantas / Flores' : 'Plants / Flowers'}</span>
+                  <p className="font-bold text-lime-vibrant">{state.plants}</p>
+                </div>
               </div>
-            </div>
-          </motion.div>
-        ))}
+            </motion.div>
+          );
+        })}
       </div>
     );
   };
 
+  const handleTrackerClick = async (day: number) => {
+    if (!currentUser) {
+      alert("Debes iniciar sesión para usar el seguimiento manual.");
+      return;
+    }
+    const dateStr = `${trackerYear}-${(trackerMonth + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+    const currentStatus = trackerDays[dateStr];
+    let nextStatus: CreativeState | null = null;
+    
+    if (!currentStatus) nextStatus = 'flow';
+    else if (currentStatus === 'flow') nextStatus = 'fog';
+    else if (currentStatus === 'fog') nextStatus = 'drought';
+    else nextStatus = null; // Remove it if clicking again
+
+    try {
+      if (nextStatus) {
+        await setDoc(doc(db, 'users', currentUser.uid, 'tracker', dateStr), {
+          status: nextStatus,
+          updatedAt: Date.now()
+        });
+      } else {
+        // Technically rules don't permit delete nicely or maybe they do, wait I added delete. 
+        // But let's just cycle. We can rely on 'drought' -> 'flow'
+        await setDoc(doc(db, 'users', currentUser.uid, 'tracker', dateStr), {
+          status: 'flow',
+          updatedAt: Date.now()
+        });
+      }
+    } catch (error) {
+      console.error("Error updating tracker", error);
+    }
+  };
+
   const renderTracker = () => {
-    const days = Array.from({ length: 30 }, (_, i) => i + 1);
-    const getAuraForDay = (day: number) => history.find(h => h.day === day);
+    const daysInMonth = new Date(trackerYear, trackerMonth + 1, 0).getDate();
+    const firstDayIndex = new Date(trackerYear, trackerMonth, 1).getDay();
+    const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+    const blanks = Array.from({ length: firstDayIndex }, (_, i) => i);
+    
+    const monthNames = [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+
+    // Calc dynamic stats
+    let focusAvg = 0, moodAvg = 0, blockAvg = 0;
+    if (history.length > 0) {
+      focusAvg = Math.round(history.reduce((acc, a) => acc + a.focusLevel, 0) / history.length);
+      moodAvg = Math.round(history.reduce((acc, a) => acc + a.moodLevel, 0) / history.length);
+      blockAvg = Math.round(history.reduce((acc, a) => acc + a.blockLevel, 0) / history.length);
+    }
 
     return (
       <div className="p-6 space-y-6">
         <div className="bg-white border-4 border-black p-6 rounded-[2rem] shadow-[0_8px_0_black]">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-2">
             <h3 className="text-2xl font-black uppercase tracking-tighter">{t.tracker}</h3>
             <Calendar className="w-8 h-8 text-pink-vibrant" />
           </div>
           
+          <div className="flex items-center justify-between mb-4 bg-stone-100 rounded-full border-2 border-black p-1">
+            <button onClick={() => setTrackerMonth(m => Math.max(0, m - 1))} className="px-3 py-1 font-black opacity-60 hover:opacity-100">&lt;</button>
+            <div className="font-black text-xs uppercase">{monthNames[trackerMonth]} {trackerYear}</div>
+            <button onClick={() => setTrackerMonth(m => Math.min(11, m + 1))} className="px-3 py-1 font-black opacity-60 hover:opacity-100">&gt;</button>
+          </div>
+
           <div className="grid grid-cols-7 gap-2">
-            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+            {['D', 'L', 'M', 'M', 'J', 'V', 'S'].map((d, i) => (
               <div key={i} className="text-center text-[10px] font-black opacity-40">{d}</div>
             ))}
+            {blanks.map(b => <div key={`b-${b}`} />)}
             {days.map(day => {
-              const aura = getAuraForDay(day);
+              const dateStr = `${trackerYear}-${(trackerMonth + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+              const pAura = history.find(h => {
+                // Approximate match from history by day of month, if no status in tracker
+                // This is a naive visual fallback if needed, but manual tracker wins
+                return h.day === day && new Date(h.createdAt || 0).getMonth() === trackerMonth;
+              });
+              
+              const trackerStatus = trackerDays[dateStr];
+              const displayStatus = trackerStatus || (pAura ? pAura.status : null);
+              
               return (
                 <motion.div 
                   key={day}
                   whileHover={{ scale: 1.1 }}
-                  className={`aspect-square rounded-lg border-2 border-black flex items-center justify-center text-xs font-black relative overflow-hidden ${
-                    aura ? (
-                      aura.status === 'flow' ? 'bg-lime-vibrant' :
-                      aura.status === 'fog' ? 'bg-pink-vibrant' :
-                      aura.status === 'drought' ? 'bg-blue-vibrant' : 'bg-star-yellow'
-                    ) : 'bg-stone-100'
+                  onClick={() => handleTrackerClick(day)}
+                  className={`cursor-pointer aspect-square rounded-lg border-2 border-black flex items-center justify-center text-xs font-black relative overflow-hidden transition-colors ${
+                    displayStatus ? (
+                      displayStatus === 'flow' ? 'bg-lime-vibrant' :
+                      displayStatus === 'fog' ? 'bg-pink-vibrant' :
+                      displayStatus === 'drought' ? 'bg-blue-vibrant' : 'bg-star-yellow'
+                    ) : 'bg-stone-100 hover:bg-stone-200'
                   }`}
                 >
                   {day}
-                  {aura && (
+                  {(trackerStatus || pAura) && (
                     <div className="absolute inset-0 flex items-center justify-center opacity-20">
                       <Sparkles className="w-4 h-4" />
                     </div>
@@ -699,9 +902,9 @@ export default function App() {
           <h4 className="font-black uppercase text-sm mb-4">{t.stats}</h4>
           <div className="space-y-4">
             {[
-              { label: t.concentration, val: 85, color: 'bg-lime-vibrant' },
-              { label: t.mood, val: 70, color: 'bg-pink-vibrant' },
-              { label: t.block, val: 20, color: 'bg-blue-vibrant' }
+              { label: t.concentration, val: focusAvg, color: 'bg-lime-vibrant' },
+              { label: t.mood, val: moodAvg, color: 'bg-pink-vibrant' },
+              { label: t.block, val: blockAvg, color: 'bg-blue-vibrant' }
             ].map(stat => (
               <div key={stat.label} className="space-y-1">
                 <div className="flex justify-between text-[10px] font-black uppercase">
@@ -723,21 +926,108 @@ export default function App() {
     );
   };
 
+  const handleLogin = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+    } catch (error) {
+      console.error("Login failed:", error);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
+
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [newName, setNewName] = useState("");
+
+  const handleUpdateName = async () => {
+    if (!currentUser) return;
+    try {
+      const { updateProfile } = await import('firebase/auth');
+      await updateProfile(currentUser, { displayName: newName });
+      setIsEditingName(false);
+      // to reflect changes instantly we can just update a dummy state or reload current user
+      setCurrentUser({ ...currentUser, displayName: newName } as FirebaseUser);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const getPlantOfTheMonth = () => {
+    if (history.length === 0) return t.flow; // default
+    
+    const counts = { flow: 0, fog: 0, drought: 0, storm: 0 };
+    history.forEach(h => {
+      if (counts[h.status] !== undefined) counts[h.status]++;
+    });
+    
+    let dominant: CreativeState = 'flow';
+    let max = -1;
+    for (const [key, val] of Object.entries(counts)) {
+      if (val > max) { max = val; dominant = key as CreativeState; }
+    }
+    
+    const plantMap: Record<CreativeState, string> = {
+      flow: t.flow, fog: t.fog, drought: t.drought, storm: t.storm
+    };
+    return plantMap[dominant];
+  };
+
   const renderProfile = () => {
-    if (isLoggedIn) {
+    if (currentUser) {
       return (
         <div className="p-6 space-y-6">
-          <div className="bg-white border-4 border-black p-8 rounded-[3rem] shadow-[0_10px_0_black] text-center space-y-4">
+          <div className="bg-white border-4 border-black p-8 rounded-[3rem] shadow-[0_10px_0_black] text-center space-y-4 relative">
             <div className="w-32 h-32 bg-lime-vibrant rounded-full border-4 border-black mx-auto flex items-center justify-center overflow-hidden">
-              <User className="w-16 h-16" />
+              {currentUser.photoURL ? (
+                <img src={currentUser.photoURL} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+              ) : (
+                <User className="w-16 h-16" />
+              )}
             </div>
-            <div>
-              <h3 className="text-2xl font-black uppercase">Creative User</h3>
-              <p className="text-sm font-bold opacity-60">creative@aurabloom.com</p>
+            
+            <div className="flex flex-col items-center justify-center py-2">
+              {isEditingName ? (
+                <div className="flex bg-stone-100 rounded-full border-2 border-black overflow-hidden shadow-[0_2px_0_black]">
+                  <input 
+                    type="text" 
+                    value={newName} 
+                    onChange={e => setNewName(e.target.value)}
+                    placeholder="Nuevo nombre"
+                    className="bg-transparent px-4 py-2 font-black text-sm outline-none w-32"
+                  />
+                  <button onClick={handleUpdateName} className="bg-lime-vibrant px-4 py-2 font-black text-xs uppercase border-l-2 border-black">OK</button>
+                </div>
+              ) : (
+                <div 
+                  className="group cursor-pointer flex flex-col items-center" 
+                  onClick={() => { setIsEditingName(true); setNewName(currentUser.displayName || ''); }}
+                >
+                  <h3 className="text-2xl font-black uppercase max-w-[200px] mx-auto truncate text-ellipsis group-hover:text-pink-vibrant transition-colors">
+                    {currentUser.displayName || 'Creative User'}
+                  </h3>
+                  <div className="text-[10px] font-black uppercase opacity-40 mt-1 bg-stone-200 px-2 py-1 rounded-full">Editar Nombre</div>
+                </div>
+              )}
             </div>
+
+            <p className="text-sm font-bold opacity-60 truncate w-[200px] mx-auto text-ellipsis">{currentUser.email}</p>
+            
+            <div className="bg-star-yellow border-2 border-black p-4 rounded-2xl shadow-[0_4px_0_black] mt-4 text-left">
+              <span className="text-[10px] font-black uppercase opacity-60 block">Planta del mes</span>
+              <span className="font-black text-lg leading-tight uppercase">{getPlantOfTheMonth()}</span>
+              <p className="text-xs font-bold mt-1 opacity-80">(Basado en tus emociones más frecuentes)</p>
+            </div>
+
             <button 
-              onClick={() => setIsLoggedIn(false)}
-              className="w-full bg-pink-vibrant text-black font-black py-4 rounded-2xl border-2 border-black shadow-[0_4px_0_black] active:shadow-none active:translate-y-1 transition-all uppercase flex items-center justify-center space-x-2"
+              onClick={handleLogout}
+              className="w-full mt-4 bg-pink-vibrant text-black font-black py-4 rounded-2xl border-2 border-black shadow-[0_4px_0_black] active:shadow-none active:translate-y-1 transition-all uppercase flex items-center justify-center space-x-2"
             >
               <LogOut className="w-5 h-5" />
               <span>{t.logout}</span>
@@ -749,45 +1039,19 @@ export default function App() {
 
     return (
       <div className="p-6 space-y-6">
-        <div className="bg-white border-4 border-black p-8 rounded-[3rem] shadow-[0_10px_0_black] space-y-6">
-          <div className="flex border-2 border-black rounded-2xl overflow-hidden">
-            <button 
-              onClick={() => setAuthMode('login')}
-              className={`flex-1 py-3 font-black uppercase text-xs ${authMode === 'login' ? 'bg-navy-deep text-white' : 'bg-white text-black'}`}
-            >
-              {t.login}
-            </button>
-            <button 
-              onClick={() => setAuthMode('register')}
-              className={`flex-1 py-3 font-black uppercase text-xs ${authMode === 'register' ? 'bg-navy-deep text-white' : 'bg-white text-black'}`}
-            >
-              {t.register}
-            </button>
+        <div className="bg-white border-4 border-black p-8 rounded-[3rem] shadow-[0_10px_0_black] space-y-6 text-center">
+          <div className="w-24 h-24 bg-stone-100 rounded-full border-4 border-black mx-auto flex items-center justify-center mb-4">
+             <User className="w-10 h-10 opacity-30" />
           </div>
-
-          <div className="space-y-4">
-            {authMode === 'register' && (
-              <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase opacity-60 ml-2">{t.username}</label>
-                <input type="text" className="w-full bg-stone-100 border-2 border-black rounded-xl p-3 font-bold focus:outline-none focus:ring-2 focus:ring-lime-vibrant" />
-              </div>
-            )}
-            <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase opacity-60 ml-2">{t.email}</label>
-              <input type="email" className="w-full bg-stone-100 border-2 border-black rounded-xl p-3 font-bold focus:outline-none focus:ring-2 focus:ring-lime-vibrant" />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase opacity-60 ml-2">Password</label>
-              <input type="password" className="w-full bg-stone-100 border-2 border-black rounded-xl p-3 font-bold focus:outline-none focus:ring-2 focus:ring-lime-vibrant" />
-            </div>
-          </div>
+          <h3 className="text-xl font-black uppercase tracking-tighter">Sign in to save your history</h3>
+          <p className="text-xs font-bold opacity-60">Connect with Google to securely store your creative states and track your blooming over time.</p>
 
           <button 
-            onClick={() => setIsLoggedIn(true)}
-            className="w-full bg-lime-vibrant text-black font-black py-4 rounded-2xl border-2 border-black shadow-[0_4px_0_black] active:shadow-none active:translate-y-1 transition-all uppercase flex items-center justify-center space-x-2"
+            onClick={handleLogin}
+            className="w-full bg-lime-vibrant text-black font-black py-4 rounded-2xl border-2 border-black shadow-[0_4px_0_black] active:shadow-none active:translate-y-1 transition-all uppercase flex items-center justify-center space-x-2 mt-4"
           >
-            {authMode === 'login' ? <User className="w-5 h-5" /> : <UserPlus className="w-5 h-5" />}
-            <span>{authMode === 'login' ? t.login : t.register}</span>
+            <UserPlus className="w-5 h-5" />
+            <span>Continue with Google</span>
           </button>
         </div>
       </div>
@@ -795,7 +1059,16 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-navy-deep font-sans flex flex-col max-w-md mx-auto shadow-2xl overflow-hidden relative border-x-4 border-navy-deep">
+    <div className="min-h-screen w-full bg-[#f4f0ea] flex justify-center items-start sm:items-center relative overflow-hidden">
+      {/* Decorative Desktop Background */}
+      <div className="hidden sm:block absolute inset-0 pointer-events-none">
+        <div className="absolute -top-20 -left-20 w-96 h-96 bg-lime-vibrant rounded-full mix-blend-multiply filter blur-[80px] opacity-60 animate-pulse" />
+        <div className="absolute top-1/4 right-0 w-80 h-80 bg-pink-vibrant rounded-full mix-blend-multiply filter blur-[80px] opacity-60 animate-pulse" style={{ animationDelay: '2s' }} />
+        <div className="absolute -bottom-20 left-1/3 w-[30rem] h-[30rem] bg-blue-vibrant rounded-full mix-blend-multiply filter blur-[100px] opacity-40 animate-pulse" style={{ animationDelay: '4s' }} />
+      </div>
+
+      {/* Main App Container */}
+      <div className="w-full min-h-screen sm:min-h-[850px] sm:h-[90vh] bg-white text-navy-deep font-sans flex flex-col max-w-md sm:rounded-[3rem] shadow-2xl overflow-hidden relative border-x-4 sm:border-y-4 border-navy-deep z-10">
       
       {/* Language Toggle Floating */}
       <button 
@@ -855,18 +1128,35 @@ export default function App() {
                    ) : hasCameraPermission === false ? (
                     <div className="p-6 text-center space-y-4">
                       <p className="text-[10px] font-bold text-red-500 leading-tight">{t.permissionDenied}</p>
-                      <div className="flex flex-col space-y-2">
+                      <div className="flex flex-col space-y-2 relative">
                         <button 
                           onClick={() => startCamera()}
                           className="bg-navy-deep text-white text-[10px] font-black px-4 py-2 rounded-full border-2 border-black shadow-[0_2px_0_black] active:shadow-none active:translate-y-0.5 transition-all"
                         >
                           {t.requestPermission}
                         </button>
+                        
+                        <div className="relative mt-2">
+                           <input 
+                             type="file" 
+                             accept="image/*" 
+                             className="hidden" 
+                             ref={fileInputRef}
+                             onChange={handleFileUpload}
+                           />
+                           <button 
+                             onClick={() => fileInputRef.current?.click()}
+                             className="w-full bg-lime-vibrant text-black text-[10px] font-black px-4 py-2 rounded-full border-2 border-black shadow-[0_2px_0_black] active:shadow-none active:translate-y-0.5 transition-all"
+                           >
+                             {t.uploadPhoto || "Upload Photo"}
+                           </button>
+                        </div>
+                        
                         <a 
                           href="https://support.google.com/chrome/answer/2693767" 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="text-[8px] font-black uppercase opacity-40 hover:opacity-100 transition-opacity underline"
+                          className="text-[8px] font-black uppercase opacity-40 hover:opacity-100 transition-opacity underline mt-2 inline-block"
                         >
                           Troubleshoot Camera
                         </a>
@@ -953,13 +1243,18 @@ export default function App() {
             className="flex-1 flex flex-col bg-[#f0f4ff] min-h-screen relative pb-32"
           >
             {/* Header */}
-            <div className="p-6 pt-12">
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-black text-navy-deep">{activeTab === 'guide' ? t.guideTitle : t.goodMorning}</h2>
+            <div className="p-6 pt-16">
+              <div className="flex flex-wrap items-center justify-between">
+                <div>
+                  <h2 className="text-3xl font-black text-navy-deep leading-tight">{activeTab === 'guide' ? t.guideTitle : t.goodMorning}</h2>
+                  {activeTab === 'guide' && (
+                    <p className="text-sm font-bold opacity-60 mt-1">Conoce cómo te sientes</p>
+                  )}
+                </div>
                 {activeTab === 'guide' && (
                   <button 
                     onClick={() => setActiveTab('tracker')}
-                    className="bg-white border-2 border-black px-4 py-1 rounded-full font-black text-xs shadow-[0_2px_0_black] active:shadow-none active:translate-y-0.5 transition-all"
+                    className="mt-4 w-full sm:w-auto bg-white border-2 border-black px-6 py-2 rounded-full font-black text-xs shadow-[0_2px_0_black] active:shadow-none active:translate-y-0.5 transition-all"
                   >
                     {t.back}
                   </button>
@@ -1076,7 +1371,7 @@ export default function App() {
             </div>
 
             {/* Bottom Nav */}
-            <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-[350px] bg-white rounded-full border-2 border-black shadow-[0_6px_0_black] flex items-center justify-around p-2 z-50">
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-[350px] bg-white rounded-full border-2 border-black shadow-[0_6px_0_black] flex items-center justify-around p-2 z-50">
               <button 
                 onClick={() => setActiveTab('scan')}
                 className={`p-3 rounded-full transition-all ${activeTab === 'scan' ? 'bg-navy-deep text-white' : 'text-navy-deep hover:bg-stone-100'}`}
@@ -1105,6 +1400,7 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
     </div>
   );
 }

@@ -1,0 +1,32 @@
+{
+  "entities": {
+    "AuraEntry": {
+      "title": "AuraEntry",
+      "description": "Represents a single creative block scan.",
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["flow", "fog", "drought", "storm"]
+        },
+        "focusLevel": { "type": "number" },
+        "moodLevel": { "type": "number" },
+        "blockLevel": { "type": "number" },
+        "serenity": { "type": "number" },
+        "energy": { "type": "number" },
+        "imageUrl": { "type": "string" },
+        "date": { "type": "string" },
+        "day": { "type": "number" },
+        "userId": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["status", "focusLevel", "moodLevel", "blockLevel", "serenity", "energy", "date", "day", "userId", "createdAt"]
+    }
+  },
+  "firestore": {
+    "users/{userId}/auras/{auraId}": {
+      "schema": { "$ref": "#/entities/AuraEntry" },
+      "description": "User's individual creative scan records."
+    }
+  }
+}
