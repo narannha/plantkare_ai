@@ -1087,7 +1087,7 @@ export default function App() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="h-full flex flex-col bg-navy-deep p-8 relative min-h-screen"
+            className="h-full flex flex-col bg-navy-deep p-8 relative overflow-y-auto overflow-x-hidden"
           >
             {/* Background elements */}
             <div className="absolute top-10 right-10 w-20 h-20 bg-blue-vibrant rounded-full opacity-20 blur-xl" />
@@ -1130,7 +1130,7 @@ export default function App() {
                       <p className="text-[10px] font-bold text-red-500 leading-tight">{t.permissionDenied}</p>
                       <div className="flex flex-col space-y-2 relative">
                         <button 
-                          onClick={() => startCamera()}
+                          onClick={() => { setHasCameraPermission(null); startCamera(); }}
                           className="bg-navy-deep text-white text-[10px] font-black px-4 py-2 rounded-full border-2 border-black shadow-[0_2px_0_black] active:shadow-none active:translate-y-0.5 transition-all"
                         >
                           {t.requestPermission}
@@ -1240,7 +1240,7 @@ export default function App() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="flex-1 flex flex-col bg-[#f0f4ff] min-h-screen relative pb-32"
+            className="flex-1 flex flex-col bg-[#f0f4ff] h-full overflow-y-auto relative pb-32"
           >
             {/* Header */}
             <div className="p-6 pt-16">
@@ -1369,37 +1369,39 @@ export default function App() {
 
               {activeTab === 'profile' && renderProfile()}
             </div>
-
-            {/* Bottom Nav */}
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-[350px] bg-white rounded-full border-2 border-black shadow-[0_6px_0_black] flex items-center justify-around p-2 z-50">
-              <button 
-                onClick={() => setActiveTab('scan')}
-                className={`p-3 rounded-full transition-all ${activeTab === 'scan' ? 'bg-navy-deep text-white' : 'text-navy-deep hover:bg-stone-100'}`}
-              >
-                <Home className="w-6 h-6" />
-              </button>
-              <button 
-                onClick={() => setActiveTab('tracker')}
-                className={`p-3 rounded-full transition-all ${(activeTab === 'tracker' || activeTab === 'guide') ? 'bg-navy-deep text-white' : 'text-navy-deep hover:bg-stone-100'}`}
-              >
-                <Calendar className="w-6 h-6" />
-              </button>
-              <button 
-                onClick={() => setActiveTab('history')}
-                className={`p-3 rounded-full transition-all ${activeTab === 'history' ? 'bg-navy-deep text-white' : 'text-navy-deep hover:bg-stone-100'}`}
-              >
-                <History className="w-6 h-6" />
-              </button>
-              <button 
-                onClick={() => setActiveTab('profile')}
-                className={`p-3 rounded-full transition-all ${activeTab === 'profile' ? 'bg-navy-deep text-white' : 'text-navy-deep hover:bg-stone-100'}`}
-              >
-                <User className="w-6 h-6" />
-              </button>
-            </div>
           </motion.div>
         )}
       </AnimatePresence>
+      
+      {/* Bottom Nav */}
+      {activeTab !== 'scan' && (
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-[350px] bg-white rounded-full border-2 border-black shadow-[0_6px_0_black] flex items-center justify-around p-2 z-50">
+          <button 
+            onClick={() => setActiveTab('scan')}
+            className={`p-3 rounded-full transition-all ${activeTab === 'scan' ? 'bg-navy-deep text-white' : 'text-navy-deep hover:bg-stone-100'}`}
+          >
+            <Home className="w-6 h-6" />
+          </button>
+          <button 
+            onClick={() => setActiveTab('tracker')}
+            className={`p-3 rounded-full transition-all ${(activeTab === 'tracker' || activeTab === 'guide') ? 'bg-navy-deep text-white' : 'text-navy-deep hover:bg-stone-100'}`}
+          >
+            <Calendar className="w-6 h-6" />
+          </button>
+          <button 
+            onClick={() => setActiveTab('history')}
+            className={`p-3 rounded-full transition-all ${activeTab === 'history' ? 'bg-navy-deep text-white' : 'text-navy-deep hover:bg-stone-100'}`}
+          >
+            <History className="w-6 h-6" />
+          </button>
+          <button 
+            onClick={() => setActiveTab('profile')}
+            className={`p-3 rounded-full transition-all ${activeTab === 'profile' ? 'bg-navy-deep text-white' : 'text-navy-deep hover:bg-stone-100'}`}
+          >
+            <User className="w-6 h-6" />
+          </button>
+        </div>
+      )}
     </div>
     </div>
   );
