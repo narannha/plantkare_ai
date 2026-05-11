@@ -1400,7 +1400,7 @@ export default function App() {
                     <motion.div 
                       animate={{ scale: [1, 1.05, 1] }}
                       transition={{ repeat: Infinity, duration: 3 }}
-                      className="absolute -top-10 -left-10 bg-blue-vibrant px-6 py-3 rounded-full border-2 border-black font-black text-lg -rotate-12 z-50 shadow-[4px_4px_0_rgba(0,0,0,0.2)] whitespace-nowrap"
+                      className="absolute -top-4 -left-10 bg-blue-vibrant px-6 py-3 rounded-full border-2 border-black font-black text-lg -rotate-12 z-50 shadow-[4px_4px_0_rgba(0,0,0,0.2)] whitespace-nowrap"
                     >
                       {t.start}
                     </motion.div>
@@ -1632,9 +1632,9 @@ export default function App() {
                   {/* Colombia Linked Date Picker */}
                   <div className="px-6 pt-4 mb-6 overflow-x-auto no-scrollbar">
                     <div className="flex space-x-4 justify-start">
-                      {Array.from({ length: 30 }, (_, i) => {
+                      {Array.from({ length: 60 }, (_, i) => {
                         const colNow = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Bogota" }));
-                        const offset = i - 15; // 15 days before, today, 14 days after
+                        const offset = i - 30; // 30 días antes, hoy, 29 días después
                         const targetDate = new Date(colNow);
                         targetDate.setDate(colNow.getDate() + offset);
                         
