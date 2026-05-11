@@ -723,13 +723,15 @@ export default function App() {
           }, { merge: true });
         } catch (error) {
           console.error("Firebase save failed:", error);
-          // Still update local history as fallback
-          setHistory(prev => [newAura, ...prev]);
         }
-      } else {
-        console.log("User not logged in, saving to local state only.");
-        setHistory(prev => [newAura, ...prev]);
-      }
+      } 
+      
+      // Always update local state for immediate feedback
+      setHistory(prev => {
+        if (prev.some(h => h.id === newAura.id)) return prev;
+        const updated = [newAura, ...prev];
+        return updated.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+      });
 
       setCurrentAura(newAura);
       setActiveTab('diagnosis');
@@ -770,10 +772,22 @@ export default function App() {
   const toggleLang = () => setLang(prev => prev === 'en' ? 'es' : 'en');
 
   const getColombiaDateString = (date: Date) => {
+    // Return language-independent YYYY-MM-DD using en-CA for format consistency
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Bogota',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(date);
+  };
+
+  const formatDisplayDate = (dateStr: string) => {
+    if (!dateStr || !dateStr.includes('-')) return dateStr;
+    const [y, m, d] = dateStr.split('-').map(Number);
+    // Create a date object from the strings (interpreted as local, but we just want the day of week)
+    const date = new Date(y, m - 1, d);
     const dayNames = lang === 'es' ? ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'] : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    // Get Colombia date
-    const colDate = new Date(date.toLocaleString("en-US", { timeZone: "America/Bogota" }));
-    return `${colDate.getDate()} ${dayNames[colDate.getDay()]}`;
+    return `${d} ${dayNames[date.getDay()]}`;
   };
 
   const getColombiaTrackerID = (date: Date) => {
@@ -1190,13 +1204,13 @@ export default function App() {
   const renderProfile = () => {
     if (currentUser) {
       return (
-        <div className={`p-6 space-y-6 ${theme === 'dark' ? 'dark' : ''}`}>
-          <div className={`${theme === 'dark' ? 'bg-navy-deep text-white border-white' : 'bg-white text-navy-deep border-black'} border-4 p-8 rounded-[3rem] shadow-[0_10px_0_currentColor] text-center space-y-4 relative`}>
-            <div className={`w-32 h-32 ${theme === 'dark' ? 'bg-blue-vibrant' : 'bg-lime-vibrant'} rounded-full border-4 border-current mx-auto flex items-center justify-center overflow-hidden`}>
+        <div className={`p-6 space-y-6 ${theme === 'dark' ? 'dark text-white' : ''}`}>
+          <div className={`${theme === 'dark' ? 'bg-white/10 text-white border-white shadow-[0_10px_0_white]' : 'bg-white text-navy-deep border-black shadow-[0_10px_0_black]'} border-4 p-8 rounded-[3rem] text-center space-y-4 relative`}>
+            <div className={`w-32 h-32 ${theme === 'dark' ? 'bg-white/10' : 'bg-stone-100'} rounded-full border-4 border-current mx-auto flex items-center justify-center overflow-hidden`}>
               {currentUser.photoURL ? (
                 <img src={currentUser.photoURL} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
               ) : (
-                <User className="w-16 h-16" />
+                <User className={`w-16 h-16 ${theme === 'dark' ? 'text-white' : 'text-navy-deep'} opacity-20`} />
               )}
             </div>
             
@@ -1210,14 +1224,14 @@ export default function App() {
                     placeholder="Nuevo nombre"
                     className="bg-transparent px-4 py-2 font-black text-sm outline-none w-32"
                   />
-                  <button onClick={handleUpdateName} className="bg-lime-vibrant text-black px-4 py-2 font-black text-xs uppercase border-l-2 border-black">OK</button>
+                  <button onClick={handleUpdateName} className="bg-lime-vibrant text-black px-4 py-2 font-black text-xs uppercase border-l-2 border-current">OK</button>
                 </div>
               ) : (
                 <div 
                   className="group cursor-pointer flex flex-col items-center" 
                   onClick={() => { setIsEditingName(true); setNewName(currentUser.displayName || ''); }}
                 >
-                  <h3 className="text-2xl font-black uppercase max-w-[200px] mx-auto truncate text-ellipsis group-hover:text-pink-vibrant transition-colors">
+                  <h3 className={`text-2xl font-black uppercase max-w-[200px] mx-auto truncate text-ellipsis group-hover:text-pink-vibrant transition-colors ${theme === 'dark' ? 'text-white' : 'text-navy-deep'}`}>
                     {currentUser.displayName || 'Creative User'}
                   </h3>
                   <div className={`text-[10px] font-black uppercase opacity-40 mt-1 ${theme === 'dark' ? 'bg-white/10' : 'bg-stone-200'} px-2 py-1 rounded-full`}>Editar Nombre</div>
@@ -1225,9 +1239,9 @@ export default function App() {
               )}
             </div>
 
-            <p className="text-sm font-bold opacity-60 truncate w-[200px] mx-auto text-ellipsis">{currentUser.email}</p>
+            <p className={`text-sm font-bold opacity-60 truncate w-[200px] mx-auto text-ellipsis ${theme === 'dark' ? 'text-white' : 'text-navy-deep'}`}>{currentUser.email}</p>
             
-            <div className={`${theme === 'dark' ? 'bg-blue-900/40 text-blue-100' : 'bg-star-yellow text-navy-deep'} border-2 border-current p-4 rounded-2xl shadow-[0_4px_0_currentColor] mt-4 text-left`}>
+            <div className={`${theme === 'dark' ? 'bg-blue-vibrant/20 text-white' : 'bg-star-yellow text-navy-deep'} border-2 border-current p-4 rounded-2xl shadow-[0_4px_0_currentColor] mt-4 text-left`}>
               <span className="text-[10px] font-black uppercase opacity-60 block">Planta del mes</span>
               <span className="font-black text-lg leading-tight uppercase">{getPlantOfTheMonth()}</span>
               <p className="text-xs font-bold mt-1 opacity-80">(Basado en tus emociones más frecuentes)</p>
@@ -1239,7 +1253,7 @@ export default function App() {
                 <div className={`p-2 rounded-full ${theme === 'dark' ? 'bg-blue-vibrant text-white' : 'bg-star-yellow text-black'}`}>
                   {theme === 'dark' ? <Wind className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
                 </div>
-                <span className="text-[10px] font-black uppercase">{theme === 'dark' ? 'Modo Oscuro' : 'Modo Claro'}</span>
+                <span className={`text-[10px] font-black uppercase ${theme === 'dark' ? 'text-white' : 'text-navy-deep'}`}>{theme === 'dark' ? 'Modo Oscuro' : 'Modo Claro'}</span>
               </div>
               <button 
                 onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')}
@@ -1254,7 +1268,7 @@ export default function App() {
 
             <button 
               onClick={handleLogout}
-              className="w-full mt-4 bg-pink-vibrant text-black font-black py-4 rounded-2xl border-2 border-black shadow-[0_4px_0_black] active:shadow-none active:translate-y-1 transition-all uppercase flex items-center justify-center space-x-2"
+              className={`w-full mt-4 bg-pink-vibrant text-black font-black py-4 rounded-2xl border-2 border-current shadow-[0_4px_0_currentColor] active:shadow-none active:translate-y-1 transition-all uppercase flex items-center justify-center space-x-2`}
             >
               <LogOut className="w-5 h-5" />
               <span>{t.logout}</span>
@@ -1266,16 +1280,16 @@ export default function App() {
 
     return (
       <div className="p-6 space-y-6">
-        <div className="bg-white border-4 border-black p-8 rounded-[3rem] shadow-[0_10px_0_black] space-y-6 text-center">
-          <div className="w-24 h-24 bg-stone-100 rounded-full border-4 border-black mx-auto flex items-center justify-center mb-4">
-             <User className="w-10 h-10 opacity-30" />
+          <div className={`${theme === 'dark' ? 'bg-white/10 border-white text-white shadow-[0_10px_0_white]' : 'bg-white border-black text-navy-deep shadow-[0_10px_0_black]'} border-4 p-8 rounded-[3rem] space-y-6 text-center`}>
+          <div className={`w-24 h-24 ${theme === 'dark' ? 'bg-white/10' : 'bg-stone-100'} rounded-full border-4 border-current mx-auto flex items-center justify-center mb-4`}>
+             <User className={`w-10 h-10 ${theme === 'dark' ? 'text-white' : 'text-navy-deep'} opacity-30`} />
           </div>
           <h3 className="text-xl font-black uppercase tracking-tighter">Sign in to save your history</h3>
           <p className="text-xs font-bold opacity-60">Connect with Google to securely store your creative states and track your blooming over time.</p>
 
           <button 
             onClick={handleLogin}
-            className="w-full bg-lime-vibrant text-black font-black py-4 rounded-2xl border-2 border-black shadow-[0_4px_0_black] active:shadow-none active:translate-y-1 transition-all uppercase flex items-center justify-center space-x-2 mt-4"
+            className={`w-full ${theme === 'dark' ? 'bg-lime-vibrant text-black border-white shadow-[0_4px_0_white]' : 'bg-lime-vibrant text-black border-black shadow-[0_4px_0_black]'} font-black py-4 rounded-2xl border-2 active:shadow-none active:translate-y-1 transition-all uppercase flex items-center justify-center space-x-2 mt-4`}
           >
             <UserPlus className="w-5 h-5" />
             <span>Continue with Google</span>
@@ -1469,7 +1483,7 @@ export default function App() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className={`flex-1 flex flex-col ${theme === 'dark' ? 'bg-black/90' : 'bg-[#f0f4ff]'} h-full overflow-y-auto relative pb-32`}
+            className={`flex-1 flex flex-col ${theme === 'dark' ? 'bg-navy-deep' : 'bg-[#f0f4ff]'} h-full overflow-y-auto relative pb-32`}
           >
             {/* Header */}
             <div className="p-6 pt-16">
@@ -1576,14 +1590,15 @@ export default function App() {
                     <div className="flex space-x-4 justify-center">
                       {Array.from({ length: 7 }, (_, i) => {
                         const d = new Date();
-                        const colNow = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Bogota" }));
                         const offset = i - 3;
-                        d.setDate(colNow.getDate() + offset);
+                        d.setDate(d.getDate() + offset);
                         
                         const dayStr = getColombiaDateString(d);
-                        const dayNum = d.getDate();
-                        const dayName = (lang === 'es' ? ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'] : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'])[d.getDay()];
-                        const monthShort = (lang === 'es' ? ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'] : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dic'])[d.getMonth()];
+                        // We need the Bogota day/month for the label
+                        const colDate = new Date(d.toLocaleString("en-US", { timeZone: "America/Bogota" }));
+                        const dayNum = colDate.getDate();
+                        const dayName = (lang === 'es' ? ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'] : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'])[colDate.getDay()];
+                        const monthShort = (lang === 'es' ? ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'] : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dic'])[colDate.getMonth()];
                         
                         const isToday = getColombiaDateString(new Date()) === dayStr;
                         const isSelected = selectedHistoryDate === dayStr;
@@ -1623,9 +1638,9 @@ export default function App() {
                               animate={{ y: 0, opacity: 1 }}
                               transition={{ delay: idx * 0.1 }}
                               className={`rounded-[2.5rem] p-6 border-2 border-black shadow-[0_6px_0_black] relative overflow-hidden ${
-                                item.status === 'flow' ? 'bg-lime-vibrant' : 
-                                item.status === 'fog' ? 'bg-pink-vibrant' : 
-                                item.status === 'drought' ? 'bg-blue-vibrant' : 'bg-star-yellow'
+                                item.status === 'flow' ? 'bg-lime-vibrant text-black' : 
+                                item.status === 'fog' ? 'bg-pink-vibrant text-black' : 
+                                item.status === 'drought' ? 'bg-blue-vibrant text-white' : 'bg-star-yellow text-black'
                               }`}
                             >
                               <div className="flex justify-between items-start">
@@ -1633,7 +1648,7 @@ export default function App() {
                                   <h3 className="text-xl font-black uppercase tracking-tighter">{auraData.diagnosis}</h3>
                                   <p className="text-sm font-bold opacity-80">{auraData.aroma}</p>
                                 </div>
-                                <span className="font-black text-xs uppercase opacity-60">{item.date}</span>
+                                <span className={`font-black text-[10px] uppercase opacity-60 p-2 rounded-full ${theme === 'dark' ? 'bg-black/20 text-white' : 'bg-white/20 text-navy-deep'}`}>{formatDisplayDate(item.date)}</span>
                               </div>
                               
                               <div className="mt-4 grid grid-cols-2 gap-4">
