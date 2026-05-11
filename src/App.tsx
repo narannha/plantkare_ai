@@ -224,14 +224,20 @@ const generateMockAura = (imageUrl: string): AuraState => {
   const statuses: CreativeState[] = ['flow', 'fog', 'drought', 'storm'];
   const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
   
-  const days = ['21 Mon', '22 Tue', '23 Wed', '24 Thu', '25 Fri', '26 Sat'];
-  const randomDayStr = days[Math.floor(Math.random() * days.length)];
-  const randomDayNum = parseInt(randomDayStr.split(' ')[0]);
+  const now = new Date();
+  const colDate = new Date(now.toLocaleString("en-US", { timeZone: "America/Bogota" }));
+  const dayNum = colDate.getDate();
+  
+  // Format as YYYY-MM-DD
+  const y = colDate.getFullYear();
+  const m = (colDate.getMonth() + 1).toString().padStart(2, '0');
+  const d = colDate.getDate().toString().padStart(2, '0');
+  const dateStr = `${y}-${m}-${d}`;
 
   return {
     id: Date.now().toString(),
-    date: randomDayStr,
-    day: randomDayNum,
+    date: dateStr,
+    day: dayNum,
     status: randomStatus,
     focusLevel: Math.floor(Math.random() * 40) + (randomStatus === 'flow' ? 60 : 20),
     moodLevel: Math.floor(Math.random() * 40) + (randomStatus === 'flow' ? 60 : 20),
@@ -1047,7 +1053,7 @@ export default function App() {
 
     return (
       <div className="p-6 space-y-6 pb-48">
-        <div className={`${theme === 'dark' ? 'bg-white/5 border-white shadow-[0_8px_0_white]' : 'bg-white border-black shadow-[0_8px_0_black]'} border-4 p-6 rounded-[2rem]`}>
+        <div className={`${theme === 'dark' ? 'bg-[#2a3c75] border-blue-vibrant shadow-[0_8px_0_#7db1ff]' : 'bg-white border-black shadow-[0_8px_0_black]'} border-4 p-6 rounded-[2rem]`}>
           <div className="flex items-center justify-between mb-2">
             <h3 className={`text-2xl font-black uppercase tracking-tighter ${theme === 'dark' ? 'text-white' : 'text-navy-deep'}`}>{t.tracker}</h3>
             <Calendar className="w-8 h-8 text-pink-vibrant" />
@@ -1066,7 +1072,11 @@ export default function App() {
             {blanks.map(b => <div key={`b-${b}`} />)}
             {days.map(day => {
               const dateStr = `${trackerYear}-${(trackerMonth + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-              const pAura = history.find(h => h.day === day && new Date(h.createdAt || 0).getMonth() === trackerMonth);
+              const pAura = history.find(h => {
+                const hDate = new Date(h.createdAt || 0);
+                const colHDate = new Date(hDate.toLocaleString("en-US", { timeZone: "America/Bogota" }));
+                return colHDate.getDate() === day && colHDate.getMonth() === trackerMonth;
+              });
               const trackerStatus = trackerDays[dateStr];
               const displayStatus = trackerStatus || (pAura ? pAura.status : null);
               
@@ -1096,7 +1106,7 @@ export default function App() {
           </div>
         </div>
 
-        <div className={`${theme === 'dark' ? 'bg-star-yellow/20 border-white text-white shadow-[0_8px_0_white]' : 'bg-star-yellow border-black text-navy-deep shadow-[0_8px_0_black]'} border-4 p-6 rounded-[2rem]`}>
+        <div className={`${theme === 'dark' ? 'bg-star-yellow/10 border-blue-vibrant text-white shadow-[0_8px_0_#7db1ff]' : 'bg-star-yellow border-black text-navy-deep shadow-[0_8px_0_black]'} border-4 p-6 rounded-[2rem]`}>
           <div className="flex justify-between items-center mb-4">
              <h4 className="font-black uppercase text-sm">{t.stats}</h4>
           </div>
@@ -1205,8 +1215,8 @@ export default function App() {
     if (currentUser) {
       return (
         <div className={`p-6 space-y-6 ${theme === 'dark' ? 'dark text-white' : ''}`}>
-          <div className={`${theme === 'dark' ? 'bg-white/10 text-white border-white shadow-[0_10px_0_white]' : 'bg-white text-navy-deep border-black shadow-[0_10px_0_black]'} border-4 p-8 rounded-[3rem] text-center space-y-4 relative`}>
-            <div className={`w-32 h-32 ${theme === 'dark' ? 'bg-white/10' : 'bg-stone-100'} rounded-full border-4 border-current mx-auto flex items-center justify-center overflow-hidden`}>
+          <div className={`${theme === 'dark' ? 'bg-[#2a3c75] border-blue-vibrant shadow-[0_10px_0_#7db1ff]' : 'bg-white border-black shadow-[0_10px_0_black]'} border-4 p-8 rounded-[3rem] text-center space-y-4 relative`}>
+            <div className={`w-32 h-32 ${theme === 'dark' ? 'bg-white/20' : 'bg-stone-100'} rounded-full border-4 border-current mx-auto flex items-center justify-center overflow-hidden`}>
               {currentUser.photoURL ? (
                 <img src={currentUser.photoURL} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
               ) : (
@@ -1280,8 +1290,8 @@ export default function App() {
 
     return (
       <div className="p-6 space-y-6">
-          <div className={`${theme === 'dark' ? 'bg-white/10 border-white text-white shadow-[0_10px_0_white]' : 'bg-white border-black text-navy-deep shadow-[0_10px_0_black]'} border-4 p-8 rounded-[3rem] space-y-6 text-center`}>
-          <div className={`w-24 h-24 ${theme === 'dark' ? 'bg-white/10' : 'bg-stone-100'} rounded-full border-4 border-current mx-auto flex items-center justify-center mb-4`}>
+          <div className={`${theme === 'dark' ? 'bg-[#2a3c75] border-blue-vibrant text-white shadow-[0_10px_0_#7db1ff]' : 'bg-white border-black text-navy-deep shadow-[0_10px_0_black]'} border-4 p-8 rounded-[3rem] space-y-6 text-center`}>
+          <div className={`w-24 h-24 ${theme === 'dark' ? 'bg-white/20' : 'bg-stone-100'} rounded-full border-4 border-current mx-auto flex items-center justify-center mb-4`}>
              <User className={`w-10 h-10 ${theme === 'dark' ? 'text-white' : 'text-navy-deep'} opacity-30`} />
           </div>
           <h3 className="text-xl font-black uppercase tracking-tighter">Sign in to save your history</h3>
@@ -1309,7 +1319,7 @@ export default function App() {
       </div>
 
       {/* Main App Container */}
-      <div className={`w-full min-h-screen sm:min-h-[850px] sm:h-[90vh] ${theme === 'dark' ? 'bg-navy-deep text-white' : 'bg-white text-navy-deep'} font-sans flex flex-col max-w-md sm:rounded-[3rem] shadow-2xl overflow-hidden relative border-x-4 sm:border-y-4 border-navy-deep z-10`}>
+      <div className={`w-full min-h-screen sm:min-h-[850px] sm:h-[90vh] ${theme === 'dark' ? 'bg-[#1e2b58] text-white' : 'bg-white text-navy-deep'} font-sans flex flex-col max-w-md sm:rounded-[3rem] shadow-2xl overflow-hidden relative border-x-4 sm:border-y-4 border-navy-deep z-10`}>
       
       <OnboardingModal isOpen={showOnboarding} onClose={() => setShowOnboarding(false)} t={t} />
       <button 
@@ -1328,7 +1338,7 @@ export default function App() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="h-full flex flex-col bg-navy-deep p-8 relative overflow-y-auto overflow-x-hidden"
+            className="h-full flex flex-col bg-[#1e2b58] p-8 relative overflow-y-auto overflow-x-hidden"
           >
             {/* Background elements */}
             <div className="absolute top-10 right-10 w-20 h-20 bg-blue-vibrant rounded-full opacity-20 blur-xl" />
@@ -1355,7 +1365,7 @@ export default function App() {
               <motion.div 
                 animate={{ scale: [1, 1.05, 1] }}
                 transition={{ repeat: Infinity, duration: 3 }}
-                className="absolute top-24 -left-4 bg-blue-vibrant px-6 py-3 rounded-full border-2 border-black font-black text-lg -rotate-12 z-50"
+                className="absolute top-[45%] -left-4 bg-blue-vibrant px-6 py-3 rounded-full border-2 border-black font-black text-lg -rotate-12 z-50 shadow-[4px_4px_0_rgba(0,0,0,0.2)]"
               >
                 {t.start}
               </motion.div>
@@ -1590,15 +1600,16 @@ export default function App() {
                     <div className="flex space-x-4 justify-center">
                       {Array.from({ length: 7 }, (_, i) => {
                         const d = new Date();
+                        const colNow = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Bogota" }));
                         const offset = i - 3;
-                        d.setDate(d.getDate() + offset);
+                        // Use a safe way to adjust date in Bogota
+                        const targetDate = new Date(colNow);
+                        targetDate.setDate(colNow.getDate() + offset);
                         
-                        const dayStr = getColombiaDateString(d);
-                        // We need the Bogota day/month for the label
-                        const colDate = new Date(d.toLocaleString("en-US", { timeZone: "America/Bogota" }));
-                        const dayNum = colDate.getDate();
-                        const dayName = (lang === 'es' ? ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'] : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'])[colDate.getDay()];
-                        const monthShort = (lang === 'es' ? ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'] : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dic'])[colDate.getMonth()];
+                        const dayStr = getColombiaDateString(targetDate);
+                        const dayNum = targetDate.getDate();
+                        const dayName = (lang === 'es' ? ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'] : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'])[targetDate.getDay()];
+                        const monthShort = (lang === 'es' ? ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'] : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dic'])[targetDate.getMonth()];
                         
                         const isToday = getColombiaDateString(new Date()) === dayStr;
                         const isSelected = selectedHistoryDate === dayStr;
@@ -1676,7 +1687,7 @@ export default function App() {
                           <motion.div 
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
-                            className={`rounded-[2.5rem] p-8 border-2 border-current border-dashed text-center space-y-6 ${theme === 'dark' ? 'bg-white/5' : 'bg-white/50'}`}
+                            className={`rounded-[2.5rem] p-8 border-2 border-current border-dashed text-center space-y-6 ${theme === 'dark' ? 'bg-[#2a3c75]/50' : 'bg-white/50'}`}
                           >
                             <div className="flex flex-col items-center">
                               {isTodaySelected ? (
@@ -1719,28 +1730,28 @@ export default function App() {
       
       {/* Bottom Nav */}
       {activeTab !== 'scan' && (
-        <div className={`absolute bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-[350px] ${theme === 'dark' ? 'bg-navy-deep border-white shadow-[0_6px_0_white]' : 'bg-white border-black shadow-[0_6px_0_black]'} rounded-full border-2 flex items-center justify-around p-2 z-50`}>
+        <div className={`absolute bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-[350px] ${theme === 'dark' ? 'bg-[#2a3c75] border-blue-vibrant shadow-[0_6px_0_#7db1ff]' : 'bg-white border-black shadow-[0_6px_0_black]'} rounded-full border-2 flex items-center justify-around p-2 z-50`}>
           <button 
             onClick={() => setActiveTab('scan')}
-            className={`p-3 rounded-full transition-all ${activeTab === 'scan' ? (theme === 'dark' ? 'bg-white text-navy-deep border-2 border-navy-deep' : 'bg-navy-deep text-white border-2 border-white/20') : (theme === 'dark' ? 'text-white hover:bg-white/10' : 'text-navy-deep hover:bg-stone-100')}`}
+            className={`p-3 rounded-full transition-all ${activeTab === 'scan' ? (theme === 'dark' ? 'bg-white text-navy-deep border-2 border-[#1e2b58]' : 'bg-[#1e2b58] text-white border-2 border-white/20') : (theme === 'dark' ? 'text-white hover:bg-white/10' : 'text-[#1e2b58] hover:bg-stone-100')}`}
           >
             <Home className="w-6 h-6" />
           </button>
           <button 
             onClick={() => setActiveTab('tracker')}
-            className={`p-3 rounded-full transition-all ${(activeTab === 'tracker' || activeTab === 'guide') ? (theme === 'dark' ? 'bg-white text-navy-deep border-2 border-navy-deep' : 'bg-navy-deep text-white border-2 border-white/20') : (theme === 'dark' ? 'text-white hover:bg-white/10' : 'text-navy-deep hover:bg-stone-100')}`}
+            className={`p-3 rounded-full transition-all ${(activeTab === 'tracker' || activeTab === 'guide') ? (theme === 'dark' ? 'bg-white text-navy-deep border-2 border-[#1e2b58]' : 'bg-[#1e2b58] text-white border-2 border-white/20') : (theme === 'dark' ? 'text-white hover:bg-white/10' : 'text-[#1e2b58] hover:bg-stone-100')}`}
           >
             <Calendar className="w-6 h-6" />
           </button>
           <button 
             onClick={() => setActiveTab('history')}
-            className={`p-3 rounded-full transition-all ${activeTab === 'history' ? (theme === 'dark' ? 'bg-white text-navy-deep border-2 border-navy-deep' : 'bg-navy-deep text-white border-2 border-white/20') : (theme === 'dark' ? 'text-white hover:bg-white/10' : 'text-navy-deep hover:bg-stone-100')}`}
+            className={`p-3 rounded-full transition-all ${activeTab === 'history' ? (theme === 'dark' ? 'bg-white text-navy-deep border-2 border-[#1e2b58]' : 'bg-[#1e2b58] text-white border-2 border-white/20') : (theme === 'dark' ? 'text-white hover:bg-white/10' : 'text-[#1e2b58] hover:bg-stone-100')}`}
           >
             <History className="w-6 h-6" />
           </button>
           <button 
             onClick={() => setActiveTab('profile')}
-            className={`p-3 rounded-full transition-all ${activeTab === 'profile' ? (theme === 'dark' ? 'bg-white text-navy-deep border-2 border-navy-deep' : 'bg-navy-deep text-white border-2 border-white/20') : (theme === 'dark' ? 'text-white hover:bg-white/10' : 'text-navy-deep hover:bg-stone-100')}`}
+            className={`p-3 rounded-full transition-all ${activeTab === 'profile' ? (theme === 'dark' ? 'bg-white text-navy-deep border-2 border-[#1e2b58]' : 'bg-[#1e2b58] text-white border-2 border-white/20') : (theme === 'dark' ? 'text-white hover:bg-white/10' : 'text-[#1e2b58] hover:bg-stone-100')}`}
           >
             <User className="w-6 h-6" />
           </button>
