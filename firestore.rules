@@ -35,7 +35,7 @@ service cloud.firestore {
         allow get, list, delete: if isSignedIn() && isValidId(userId) && userId == request.auth.uid;
         allow create, update: if isSignedIn() && isValidId(userId) && isValidId(dateId) && userId == request.auth.uid 
             && incoming().keys().hasAll(['status', 'updatedAt'])
-            && incoming().status in ['flow', 'fog', 'drought']
+            && incoming().status in ['flow', 'fog', 'drought', 'storm']
             && incoming().updatedAt is number;
     }
   }

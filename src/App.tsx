@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, ReactNode } from 'react';
-import { Camera, History, Sparkles, Wind, Brain, Activity, RefreshCw, Palette, Coffee, User, Home, Settings, Layout, Languages, LogOut, UserPlus, Calendar } from 'lucide-react';
+import { Camera, History, Sparkles, Wind, Brain, Activity, RefreshCw, Palette, Coffee, User, Home, Settings, Layout, Languages, LogOut, UserPlus, Calendar, Smartphone } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { GoogleGenAI, Type } from "@google/genai";
 import { initializeApp } from 'firebase/app';
@@ -440,6 +440,28 @@ export default function App() {
   const [trackerDays, setTrackerDays] = useState<Record<string, CreativeState>>({});
   const [trackerMonth, setTrackerMonth] = useState(new Date(new Date().toLocaleString("en-US", { timeZone: "America/Bogota" })).getMonth());
   const trackerYear = 2026;
+
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handler = (e: any) => {
+      console.log('beforeinstallprompt fired');
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const installApp = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`User response to the install prompt: ${outcome}`);
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+    }
+  };
 
   // Sync auth state
   useEffect(() => {
@@ -1276,6 +1298,16 @@ export default function App() {
               </button>
             </div>
 
+            {deferredPrompt && (
+              <button 
+                onClick={installApp}
+                className={`w-full mt-4 bg-blue-vibrant text-white font-black py-4 rounded-2xl border-2 border-current shadow-[0_4px_0_currentColor] active:shadow-none active:translate-y-1 transition-all uppercase flex items-center justify-center space-x-2`}
+              >
+                <Smartphone className="w-5 h-5" />
+                <span>Instalar BloomMind</span>
+              </button>
+            )}
+
             <button 
               onClick={handleLogout}
               className={`w-full mt-4 bg-pink-vibrant text-black font-black py-4 rounded-2xl border-2 border-current shadow-[0_4px_0_currentColor] active:shadow-none active:translate-y-1 transition-all uppercase flex items-center justify-center space-x-2`}
@@ -1362,18 +1394,18 @@ export default function App() {
                 {t.hello}
               </motion.div>
               
-              <motion.div 
-                animate={{ scale: [1, 1.05, 1] }}
-                transition={{ repeat: Infinity, duration: 3 }}
-                className="absolute top-[45%] -left-4 bg-blue-vibrant px-6 py-3 rounded-full border-2 border-black font-black text-lg -rotate-12 z-50 shadow-[4px_4px_0_rgba(0,0,0,0.2)]"
-              >
-                {t.start}
-              </motion.div>
-
               {/* Camera / Character Area */}
               <div className="relative w-full aspect-square flex items-center justify-center">
-                <div className="w-64 h-64 rounded-3xl overflow-hidden border-4 border-black bg-white relative flex items-center justify-center">
-                   <canvas ref={canvasRef} className="hidden" />
+                <div className="relative">
+                    <motion.div 
+                      animate={{ scale: [1, 1.05, 1] }}
+                      transition={{ repeat: Infinity, duration: 3 }}
+                      className="absolute -top-10 -left-10 bg-blue-vibrant px-6 py-3 rounded-full border-2 border-black font-black text-lg -rotate-12 z-50 shadow-[4px_4px_0_rgba(0,0,0,0.2)] whitespace-nowrap"
+                    >
+                      {t.start}
+                    </motion.div>
+                  <div className="w-64 h-64 rounded-3xl overflow-hidden border-4 border-black bg-white relative flex items-center justify-center">
+                    <canvas ref={canvasRef} className="hidden" />
                    {capturedImage ? (
                     <img src={capturedImage} alt="Captured" className="w-full h-full object-cover grayscale" />
                    ) : (hasCameraPermission === false || permissionError) ? (
@@ -1442,6 +1474,8 @@ export default function App() {
                    )}
                 </div>
                 
+                </div>
+
                 {/* Character overlaying camera */}
                 {!isScanning && !capturedImage && (
                   <div className="absolute -bottom-10 -right-4">
@@ -1597,12 +1631,10 @@ export default function App() {
                 <div className="flex-1 flex flex-col">
                   {/* Colombia Linked Date Picker */}
                   <div className="px-6 pt-4 mb-6 overflow-x-auto no-scrollbar">
-                    <div className="flex space-x-4 justify-center">
-                      {Array.from({ length: 7 }, (_, i) => {
-                        const d = new Date();
+                    <div className="flex space-x-4 justify-start">
+                      {Array.from({ length: 30 }, (_, i) => {
                         const colNow = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Bogota" }));
-                        const offset = i - 3;
-                        // Use a safe way to adjust date in Bogota
+                        const offset = i - 15; // 15 days before, today, 14 days after
                         const targetDate = new Date(colNow);
                         targetDate.setDate(colNow.getDate() + offset);
                         
@@ -1611,15 +1643,23 @@ export default function App() {
                         const dayName = (lang === 'es' ? ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'] : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'])[targetDate.getDay()];
                         const monthShort = (lang === 'es' ? ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'] : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dic'])[targetDate.getMonth()];
                         
-                        const isToday = getColombiaDateString(new Date()) === dayStr;
+                        const isTodayString = getColombiaDateString(new Date());
+                        const isToday = isTodayString === dayStr;
                         const isSelected = selectedHistoryDate === dayStr;
+
+                        const scrollRef = (el: HTMLButtonElement | null) => {
+                          if (el && isSelected) {
+                            el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                          }
+                        };
 
                         return (
                           <motion.button
                             key={dayStr}
+                            ref={scrollRef}
                             whileTap={{ scale: 0.95 }}
                             onClick={() => setSelectedHistoryDate(dayStr)}
-                            className={`flex-shrink-0 w-14 h-20 rounded-2xl border-2 border-current flex flex-col items-center justify-center transition-all ${
+                            className={`flex-shrink-0 w-14 h-20 rounded-2xl border-2 border-current flex flex-col items-center justify-center transition-all relative ${
                               isSelected 
                                 ? 'bg-blue-vibrant text-white shadow-[0_4px_0_currentColor]' 
                                 : (theme === 'dark' ? 'bg-white/10 text-white' : 'bg-lime-vibrant text-navy-deep')
@@ -1628,7 +1668,7 @@ export default function App() {
                             <span className="text-[10px] font-black uppercase opacity-60">{dayName}</span>
                             <span className="text-xl font-black">{dayNum}</span>
                             <span className="text-[8px] font-black uppercase">{monthShort}</span>
-                            {isToday && <div className="absolute -top-1 -right-1 w-3 h-3 bg-pink-vibrant rounded-full border border-black" />}
+                            {isToday && <div className="absolute -top-1 -right-1 w-3 h-3 bg-pink-vibrant rounded-full border border-black z-10" />}
                           </motion.button>
                         );
                       })}
