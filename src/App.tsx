@@ -1058,7 +1058,7 @@ export default function App() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               onClick={() => setExpandedGuideId(isExpanded ? null : state.id)}
-              className={`${style.bg} border-4 ${style.border} p-6 rounded-[2.5rem] shadow-[0_8px_0_black] cursor-pointer transition-transform hover:scale-[1.01] active:scale-95`}
+              className={`${style.bg} ${style.text} border-4 ${style.border} p-6 rounded-[2.5rem] shadow-[0_8px_0_black] cursor-pointer transition-transform hover:scale-[1.01] active:scale-95`}
             >
               <div className="flex items-center space-x-4">
                 <div className="text-4xl bg-white w-16 h-16 rounded-2xl border-2 border-black flex items-center justify-center shadow-[0_4px_0_black]">
@@ -1068,7 +1068,7 @@ export default function App() {
                   <h3 className="text-xl font-black uppercase tracking-tighter leading-none">{state.name}</h3>
                   <div className="flex flex-wrap gap-1 mt-1">
                     {state.colors.split(', ').map((color: string) => (
-                      <div key={color} className="text-[8px] font-black uppercase px-2 py-0.5 border border-black rounded-full bg-white">
+                      <div key={color} className="text-[8px] font-black uppercase px-2 py-0.5 border border-black rounded-full bg-white text-black">
                         {color}
                       </div>
                     ))}
@@ -1488,7 +1488,7 @@ export default function App() {
       <OnboardingModal isOpen={showOnboarding} onClose={() => setShowOnboarding(false)} t={t} />
       <button 
         onClick={toggleLang}
-        className="absolute top-4 right-4 z-[60] bg-white border-2 border-black p-2 rounded-full shadow-[0_2px_0_black] active:shadow-none active:translate-y-0.5 transition-all flex items-center space-x-1"
+        className="absolute top-4 right-4 z-[60] bg-white text-black border-2 border-black p-2 rounded-full shadow-[0_2px_0_black] active:shadow-none active:translate-y-0.5 transition-all flex items-center space-x-1"
       >
         <Languages className="w-4 h-4" />
         <span className="text-[10px] font-black uppercase">{lang}</span>
@@ -1710,10 +1710,26 @@ export default function App() {
                     <ScanResultAnimation aura={currentAura} />
                   </motion.div>
 
+                  {/* View History Button */}
+                  <motion.button
+                    initial={{ y: 10, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.3 }}
+                    onClick={() => {
+                      setActiveTab('history');
+                      const colToday = getColombiaDateString(new Date());
+                      setSelectedHistoryDate(colToday);
+                    }}
+                    className="w-full mt-6 bg-blue-vibrant text-white font-black py-4 rounded-2xl border-2 border-black shadow-[0_4px_0_black] active:shadow-none active:translate-y-1 transition-all uppercase tracking-widest flex items-center justify-center space-x-2"
+                  >
+                    <History className="w-5 h-5" />
+                    <span>Ver mi historial</span>
+                  </motion.button>
+
                   <motion.div 
                     initial={{ y: 20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.3 }}
+                    transition={{ delay: 0.5 }}
                     className="mt-6 bg-lime-vibrant rounded-3xl p-6 border-2 border-black shadow-[0_4px_0_black]"
                   >
                     <h3 className="text-xl font-black uppercase tracking-tighter mb-1 mt-0">{t.currentAura}</h3>
@@ -1726,7 +1742,7 @@ export default function App() {
                   <motion.div 
                     initial={{ y: 10, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.5 }}
+                    transition={{ delay: 0.7 }}
                     className="mt-6 bg-white border-2 border-black p-4 rounded-3xl flex items-center space-x-3 shadow-[0_4px_0_black]"
                   >
                     <div className="bg-lime-vibrant p-2 rounded-full border-2 border-black text-black">
@@ -1734,22 +1750,6 @@ export default function App() {
                     </div>
                     <p className="text-[10px] font-black uppercase leading-tight">Tu floración ha sido actualizada en tu historial y base de datos.</p>
                   </motion.div>
-
-                  {/* View History Button */}
-                  <motion.button
-                    initial={{ y: 10, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.7 }}
-                    onClick={() => {
-                      setActiveTab('history');
-                      const colToday = getColombiaDateString(new Date());
-                      setSelectedHistoryDate(colToday);
-                    }}
-                    className="w-full mt-6 bg-blue-vibrant text-white font-black py-4 rounded-2xl border-2 border-black shadow-[0_4px_0_black] active:shadow-none active:translate-y-1 transition-all uppercase tracking-widest flex items-center justify-center space-x-2"
-                  >
-                    <History className="w-5 h-5" />
-                    <span>Ver mi historial</span>
-                  </motion.button>
                 </div>
               )}
 
