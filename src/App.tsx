@@ -24,7 +24,20 @@ testConnection();
 
 // WARNING: Client-side API key usage is intended for demo/prototyping purposes only.
 // If deploying to production, please implement a backend to proxy API requests and secure the key.
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const getApiKey = () => {
+  try {
+    if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_GEMINI_API_KEY) {
+      return import.meta.env.VITE_GEMINI_API_KEY;
+    }
+    if (typeof process !== 'undefined' && process.env && process.env.GEMINI_API_KEY) {
+      return process.env.GEMINI_API_KEY;
+    }
+  } catch (e) {
+    console.warn("Could not read API key:", e);
+  }
+  return "missing-key";
+};
+const ai = new GoogleGenAI({ apiKey: getApiKey() });
 
 // --- Types ---
 type CreativeState = 'flow' | 'fog' | 'drought' | 'storm';
