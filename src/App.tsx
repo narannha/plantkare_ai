@@ -289,6 +289,138 @@ const Face = ({ mood }: { mood: CreativeState }) => {
   );
 };
 
+const EnergyShape = ({ status, className }: { status: CreativeState, className?: string }) => {
+  if (status === 'flow') {
+    return (
+      <svg viewBox="0 0 100 100" className={className}>
+        <circle cx="50" cy="50" r="20" fill="currentColor" />
+        <circle cx="32" cy="32" r="22" fill="currentColor" />
+        <circle cx="68" cy="32" r="22" fill="currentColor" />
+        <circle cx="32" cy="68" r="22" fill="currentColor" />
+        <circle cx="68" cy="68" r="22" fill="currentColor" />
+        <g transform="translate(50, 50)">
+          <circle cx="-10" cy="-5" r="3" fill="#000" />
+          <circle cx="10" cy="-5" r="3" fill="#000" />
+          <path d="M -6 4 Q 0 10 6 4" fill="none" stroke="#000" strokeWidth="2.5" strokeLinecap="round" />
+        </g>
+      </svg>
+    );
+  }
+  if (status === 'fog') {
+    return (
+      <svg viewBox="0 0 100 100" className={className}>
+        <rect x="25" y="25" width="50" height="50" rx="15" fill="currentColor" />
+        <rect x="22" y="30" width="56" height="40" rx="15" fill="currentColor" />
+        <rect x="30" y="22" width="40" height="56" rx="15" fill="currentColor" />
+        <g transform="translate(50, 50)">
+          <circle cx="-10" cy="-5" r="3" fill="#000" />
+          <circle cx="10" cy="-5" r="3" fill="#000" />
+          <path d="M -6 8 Q 0 2 6 8" fill="none" stroke="#000" strokeWidth="2.5" strokeLinecap="round" />
+        </g>
+      </svg>
+    );
+  }
+  if (status === 'drought') {
+    return (
+      <svg viewBox="0 0 100 100" className={className}>
+        <circle cx="50" cy="50" r="28" fill="currentColor" />
+        {[0, 45, 90, 135, 180, 225, 270, 315].map(a => {
+          const rad = a * Math.PI / 180;
+          return <circle key={a} cx={50 + 22 * Math.cos(rad)} cy={50 + 22 * Math.sin(rad)} r="14" fill="currentColor" />
+        })}
+        <g transform="translate(50, 50)">
+          <circle cx="-9" cy="-3" r="2.5" fill="#000" />
+          <circle cx="9" cy="-3" r="2.5" fill="#000" />
+          <path d="M -4 4 Q 0 8 4 4" fill="none" stroke="#000" strokeWidth="2.5" strokeLinecap="round" />
+        </g>
+      </svg>
+    );
+  }
+  // storm
+  return (
+    <svg viewBox="0 0 100 100" className={className}>
+      <circle cx="50" cy="32" r="25" fill="currentColor" />
+      <circle cx="50" cy="68" r="25" fill="currentColor" />
+      <rect x="26.5" y="32" width="47" height="36" fill="currentColor" />
+      <g transform="translate(50, 68)">
+        <circle cx="-9" cy="-8" r="3" fill="#000" />
+        <circle cx="9" cy="-8" r="3" fill="#000" />
+        <path d="M -4 4 L 4 4" fill="none" stroke="#000" strokeWidth="2.5" strokeLinecap="round" />
+      </g>
+    </svg>
+  );
+};
+
+const getStatusColor = (status: CreativeState) => {
+  switch (status) {
+    case 'flow': return 'text-lime-vibrant';
+    case 'fog': return 'text-pink-vibrant';
+    case 'drought': return 'text-blue-vibrant';
+    case 'storm': return 'text-star-yellow';
+    default: return 'text-lime-vibrant';
+  }
+};
+
+const ScanResultAnimation = ({ aura }: { aura: AuraState }) => {
+  const textColor = getStatusColor(aura.status);
+  const otherStatuses: CreativeState[] = ['flow', 'fog', 'drought', 'storm'].filter(s => s !== aura.status) as CreativeState[];
+  
+  return (
+    <div className="bg-white rounded-3xl p-6 shadow-xl relative overflow-hidden border-2 border-black/5 aspect-[4/5] flex flex-col justify-end">
+      {/* Main character container */}
+      <div className="absolute inset-0 flex items-center justify-center p-12">
+        <motion.div
+           animate={{ scale: [1, 1.05, 1], rotate: [-2, 2, -2] }}
+           transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+           className={`w-full max-w-[200px] aspect-square ${textColor} relative flex items-center justify-center`}
+        >
+          <EnergyShape status={aura.status} className="w-full h-full drop-shadow-md" />
+          
+          {/* Floating small bits */}
+          <motion.div
+             animate={{ y: [0, -10, 0], x: [0, 5, 0] }}
+             transition={{ repeat: Infinity, duration: 3, delay: 0.5, ease: "easeInOut" }}
+             className="absolute -top-4 -left-4 w-12 h-12"
+          >
+             <EnergyShape status={aura.status} className="w-full h-full opacity-90 drop-shadow-md" />
+          </motion.div>
+          <motion.div
+             animate={{ y: [0, 15, 0], x: [0, -5, 0] }}
+             transition={{ repeat: Infinity, duration: 4, delay: 1.5, ease: "easeInOut" }}
+             className="absolute top-1/2 -right-8 w-10 h-10"
+          >
+             <EnergyShape status={aura.status} className="w-full h-full opacity-90 drop-shadow-md" />
+          </motion.div>
+          <motion.div
+             animate={{ y: [0, -15, 0], x: [0, -10, 0] }}
+             transition={{ repeat: Infinity, duration: 5, delay: 0.2, ease: "easeInOut" }}
+             className="absolute bottom-4 -left-10 w-8 h-8"
+          >
+             <EnergyShape status={aura.status} className="w-full h-full opacity-90 drop-shadow-md" />
+          </motion.div>
+        </motion.div>
+      </div>
+
+      {/* Score and text */}
+      <div className="relative z-10 flex justify-between items-end">
+        <div>
+           <div className={`text-6xl font-black ${textColor} leading-none tracking-tighter`}>{aura.energy}</div>
+           <div className={`text-lg font-bold ${textColor} opacity-80 mt-1`}>Energy score</div>
+        </div>
+        
+        {/* The 3 small secondary icons */}
+        <div className="flex -space-x-1 mb-2">
+           {otherStatuses.map((st, i) => (
+             <div key={st} className={`w-8 h-8 ${getStatusColor(st)} ${i % 2 === 0 ? 'translate-y-0' : 'translate-y-2'}`}>
+                <EnergyShape status={st} className="w-full h-full drop-shadow-sm" />
+             </div>
+           ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const AuraCharacter = ({ status, size = 'lg' }: { status: CreativeState, size?: 'sm' | 'md' | 'lg' }) => {
   const getShape = () => {
     switch (status) {
@@ -1570,26 +1702,24 @@ export default function App() {
             <div className="flex-1">
               {activeTab === 'diagnosis' && currentAura && (
                 <div className="p-6">
-                  <motion.div 
-                    initial={{ x: -20, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    className="bg-lime-vibrant rounded-[2.5rem] p-6 border-2 border-black shadow-[0_6px_0_black] relative overflow-hidden"
+                  <motion.div
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ type: "spring", delay: 0.1 }}
                   >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="text-xl font-black uppercase tracking-tighter">{t.currentAura}</h3>
-                        <p className="text-sm font-bold opacity-80">{getAuraData(currentAura.status).diagnosis}</p>
-                      </div>
-                      <span className="font-black text-xs uppercase opacity-60">Now</span>
-                    </div>
-                    
-                    <div className="mt-6 flex items-center justify-between">
-                      <AuraCharacter status={currentAura.status} size="md" />
-                      <div className="text-right space-y-1">
-                        <div className="text-xs font-black uppercase opacity-60">{t.ritual}</div>
-                        <p className="text-sm font-bold max-w-[150px] leading-tight">{getAuraData(currentAura.status).ritual}</p>
-                      </div>
-                    </div>
+                    <ScanResultAnimation aura={currentAura} />
+                  </motion.div>
+
+                  <motion.div 
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.3 }}
+                    className="mt-6 bg-lime-vibrant rounded-3xl p-6 border-2 border-black shadow-[0_4px_0_black]"
+                  >
+                    <h3 className="text-xl font-black uppercase tracking-tighter mb-1 mt-0">{t.currentAura}</h3>
+                    <p className="text-sm font-bold opacity-80 mb-4">{getAuraData(currentAura.status).diagnosis}</p>
+                    <div className="text-xs font-black uppercase opacity-60 mb-1">{t.ritual}</div>
+                    <p className="text-sm font-bold leading-tight">{getAuraData(currentAura.status).ritual}</p>
                   </motion.div>
 
                   {/* Diagnostic Message Box (Repositioned lower) */}
