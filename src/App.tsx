@@ -581,13 +581,18 @@ export default function App() {
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
-  const installApp = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    console.log(`User response to the install prompt: ${outcome}`);
-    if (outcome === 'accepted') {
-      setDeferredPrompt(null);
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log(`User response to the install prompt: ${outcome}`);
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+      }
+    } else {
+      alert(lang === 'es' 
+        ? "Para instalar la aplicación, abre el menú de tu navegador y selecciona 'Añadir a la pantalla de inicio'."
+        : "To install the app, open your browser menu and select 'Add to Home Screen'.");
     }
   };
 
@@ -1431,15 +1436,13 @@ export default function App() {
               </button>
             </div>
 
-            {deferredPrompt && (
-              <button 
-                onClick={installApp}
-                className={`w-full mt-4 bg-blue-vibrant text-white font-black py-4 rounded-2xl border-2 border-current shadow-[0_4px_0_currentColor] active:shadow-none active:translate-y-1 transition-all uppercase flex items-center justify-center space-x-2`}
-              >
-                <Smartphone className="w-5 h-5" />
-                <span>Instalar BloomMind</span>
-              </button>
-            )}
+            <button 
+              onClick={handleInstallClick}
+              className={`w-full mt-4 bg-blue-vibrant text-white font-black py-4 rounded-2xl border-2 border-current shadow-[0_4px_0_currentColor] active:shadow-none active:translate-y-1 transition-all uppercase flex items-center justify-center space-x-2`}
+            >
+              <Smartphone className="w-5 h-5" />
+              <span>Instalar BloomMind</span>
+            </button>
 
             <button 
               onClick={handleLogout}
@@ -1495,15 +1498,13 @@ export default function App() {
         <span className="text-[10px] font-black uppercase">{lang}</span>
       </button>
 
-      {deferredPrompt && (
-        <button 
-          onClick={installApp}
-          className="absolute bottom-24 right-4 z-[70] bg-blue-vibrant text-white font-black p-4 rounded-full border-2 border-black shadow-[0_4px_0_black] active:shadow-none active:translate-y-1 transition-all flex items-center justify-center"
-          title="Instalar App"
-        >
-          <Smartphone className="w-6 h-6" />
-        </button>
-      )}
+      <button 
+        onClick={handleInstallClick}
+        className="absolute bottom-24 right-4 z-[70] bg-blue-vibrant text-white font-black p-4 rounded-full border-2 border-black shadow-[0_4px_0_black] active:shadow-none active:translate-y-1 transition-all flex items-center justify-center"
+        title="Instalar App"
+      >
+        <Smartphone className="w-6 h-6" />
+      </button>
 
       <AnimatePresence mode="wait">
         {/* SCAN / SPLASH SCREEN */}
