@@ -1411,6 +1411,15 @@ export default function App() {
 
             <p className={`text-sm font-bold opacity-60 truncate w-[200px] mx-auto text-ellipsis ${theme === 'dark' ? 'text-white' : 'text-navy-deep'}`}>{currentUser.email}</p>
             
+            <a 
+              href="https://www.instagram.com/annhrlll/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className={`mt-2 inline-flex items-center space-x-2 px-4 py-2 rounded-full border-2 border-current font-black text-xs uppercase transition-transform active:translate-y-1 ${theme === 'dark' ? 'bg-pink-vibrant text-black' : 'bg-lime-vibrant text-navy-deep'}`}
+            >
+              <span>@annhrlll</span>
+            </a>
+
             <div className={`${theme === 'dark' ? 'bg-blue-vibrant/20 text-white' : 'bg-star-yellow text-navy-deep'} border-2 border-current p-4 rounded-2xl shadow-[0_4px_0_currentColor] mt-4 text-left`}>
               <span className="text-[10px] font-black uppercase opacity-60 block">Planta del mes</span>
               <span className="font-black text-lg leading-tight uppercase">{getPlantOfTheMonth()}</span>
@@ -1472,6 +1481,15 @@ export default function App() {
             <UserPlus className="w-5 h-5" />
             <span>Continue with Google</span>
           </button>
+
+          <a 
+            href="https://www.instagram.com/annhrlll/" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className={`mt-6 inline-flex items-center space-x-2 px-4 py-2 rounded-full border-2 border-current font-black text-xs uppercase transition-transform active:translate-y-1 ${theme === 'dark' ? 'bg-pink-vibrant text-black' : 'bg-lime-vibrant text-navy-deep'}`}
+          >
+            <span>@annhrlll</span>
+          </a>
         </div>
 
         {/* Theme Toggle */}
