@@ -24,7 +24,14 @@ testConnection();
 
 // WARNING: Client-side API key usage is intended for demo/prototyping purposes only.
 // If deploying to production, please implement a backend to proxy API requests and secure the key.
-const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+const getAiInstance = () => {
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  if (!apiKey) {
+    console.error("VITE_GEMINI_API_KEY is not defined.");
+    return null;
+  }
+  return new GoogleGenAI({ apiKey });
+};
 
 // --- Types ---
 type CreativeState = 'flow' | 'fog' | 'drought' | 'storm';
@@ -803,6 +810,11 @@ export default function App() {
     console.log("Starting AI analysis...");
 
     try {
+      const ai = getAiInstance();
+      if (!ai) {
+        throw new Error("Missing Gemini API Key. Please add VITE_GEMINI_API_KEY to your Vercel Environment Variables.");
+      }
+
       // Extract base64 completely without the prefix
       const base64Data = capturedImage.split(',')[1];
       
