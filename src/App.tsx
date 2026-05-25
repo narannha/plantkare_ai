@@ -11,17 +11,6 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 const auth = getAuth(app);
 
-async function testConnection() {
-  try {
-    await getDocFromServer(doc(db, 'test', 'connection'));
-  } catch (error) {
-    if(error instanceof Error && error.message.includes('the client is offline')) {
-      console.error("Please check your Firebase configuration.");
-    }
-  }
-}
-testConnection();
-
 // WARNING: Client-side API key usage is intended for demo/prototyping purposes only.
 // If deploying to production, please implement a backend to proxy API requests and secure the key.
 const getAiInstance = () => {
