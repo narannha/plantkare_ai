@@ -4,10 +4,7 @@ import App from './App.tsx';
 import './index.css';
 
 class ErrorBoundary extends Component<{children: ReactNode}, {hasError: boolean, error: Error | null}> {
-  constructor(props: {children: ReactNode}) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
+  state = { hasError: false, error: null };
 
   static getDerivedStateFromError(error: Error) {
     return { hasError: true, error };
@@ -25,6 +22,7 @@ class ErrorBoundary extends Component<{children: ReactNode}, {hasError: boolean,
         </div>
       );
     }
+    // @ts-expect-error React types issue
     return this.props.children;
   }
 }
