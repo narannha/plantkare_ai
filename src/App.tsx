@@ -24,7 +24,7 @@ testConnection();
 
 // WARNING: Client-side API key usage is intended for demo/prototyping purposes only.
 // If deploying to production, please implement a backend to proxy API requests and secure the key.
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
 
 // --- Types ---
 type CreativeState = 'flow' | 'fog' | 'drought' | 'storm';
