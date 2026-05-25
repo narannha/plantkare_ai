@@ -1473,6 +1473,33 @@ export default function App() {
             <span>Continue with Google</span>
           </button>
         </div>
+
+        {/* Theme Toggle */}
+        <div className={`p-4 rounded-2xl border-2 border-current ${theme === 'dark' ? 'bg-[#2a3c75] text-white border-blue-vibrant shadow-[0_4px_0_#7db1ff]' : 'bg-white border-black text-navy-deep shadow-[0_4px_0_black]'} flex items-center justify-between`}>
+          <div className="flex items-center space-x-2">
+            <div className={`p-2 rounded-full ${theme === 'dark' ? 'bg-blue-vibrant text-white' : 'bg-star-yellow text-black'}`}>
+              {theme === 'dark' ? <Wind className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
+            </div>
+            <span className="text-[10px] font-black uppercase">{theme === 'dark' ? 'Modo Oscuro' : 'Modo Claro'}</span>
+          </div>
+          <button 
+            onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')}
+            className={`w-12 h-6 rounded-full border-2 border-current relative transition-colors ${theme === 'dark' ? 'bg-lime-vibrant' : 'bg-stone-200'}`}
+          >
+            <motion.div 
+              animate={{ x: theme === 'dark' ? 24 : 0 }}
+              className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full border border-black"
+            />
+          </button>
+        </div>
+
+        <button 
+          onClick={handleInstallClick}
+          className={`w-full bg-blue-vibrant text-white font-black py-4 rounded-2xl border-2 border-current shadow-[0_4px_0_currentColor] active:shadow-none active:translate-y-1 transition-all uppercase flex items-center justify-center space-x-2`}
+        >
+          <Smartphone className="w-5 h-5" />
+          <span>Instalar BloomMind</span>
+        </button>
       </div>
     );
   };
@@ -1496,14 +1523,6 @@ export default function App() {
       >
         <Languages className="w-4 h-4" />
         <span className="text-[10px] font-black uppercase">{lang}</span>
-      </button>
-
-      <button 
-        onClick={handleInstallClick}
-        className="absolute bottom-24 right-4 z-[70] bg-blue-vibrant text-white font-black p-4 rounded-full border-2 border-black shadow-[0_4px_0_black] active:shadow-none active:translate-y-1 transition-all flex items-center justify-center"
-        title="Instalar App"
-      >
-        <Smartphone className="w-6 h-6" />
       </button>
 
       <AnimatePresence mode="wait">
@@ -1844,16 +1863,16 @@ export default function App() {
                                 <span className={`font-black text-[10px] uppercase opacity-60 p-2 rounded-full ${theme === 'dark' ? 'bg-black/20 text-white' : 'bg-white/20 text-navy-deep'}`}>{formatDisplayDate(item.date)}</span>
                               </div>
                               
-                              <div className="mt-4 grid grid-cols-2 gap-4">
+                              <div className="mt-4 flex flex-col space-y-3">
                                 <div className="flex items-center space-x-2">
                                    <AuraCharacter status={item.status} size="sm" />
-                                   <div className="text-xs font-black uppercase">
+                                   <div className="text-xs font-black uppercase flex flex-col sm:flex-row sm:space-x-4">
                                      <div className="whitespace-nowrap">{t.focus}: {item.focusLevel}%</div>
                                      <div className="whitespace-nowrap">{t.mood}: {item.moodLevel}%</div>
                                    </div>
                                 </div>
-                                <div className="text-right flex flex-col justify-center">
-                                   <div className="text-[10px] font-black uppercase opacity-60">{t.tip}</div>
+                                <div className={`rounded-xl p-3 border border-current border-dashed ${theme === 'dark' ? 'bg-black/20' : 'bg-white/30'}`}>
+                                   <div className="text-[10px] font-black uppercase opacity-60 mb-1">{t.tip}</div>
                                    <p className="text-[10px] font-bold leading-tight italic">"{auraData.tip}"</p>
                                 </div>
                               </div>
