@@ -1731,7 +1731,7 @@ export default function App() {
                     initial={{ y: 20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.5 }}
-                    className="mt-6 bg-lime-vibrant rounded-3xl p-6 border-2 border-black shadow-[0_4px_0_black]"
+                    className="mt-6 bg-lime-vibrant text-navy-deep rounded-3xl p-6 border-2 border-black shadow-[0_4px_0_black]"
                   >
                     <h3 className="text-xl font-black uppercase tracking-tighter mb-1 mt-0">{t.currentAura}</h3>
                     <p className="text-sm font-bold opacity-80 mb-4">{getAuraData(currentAura.status).diagnosis}</p>
@@ -1744,7 +1744,7 @@ export default function App() {
                     initial={{ y: 10, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.7 }}
-                    className="mt-6 bg-white border-2 border-black p-4 rounded-3xl flex items-center space-x-3 shadow-[0_4px_0_black]"
+                    className="mt-6 bg-white text-navy-deep border-2 border-black p-4 rounded-3xl flex items-center space-x-3 shadow-[0_4px_0_black]"
                   >
                     <div className="bg-lime-vibrant p-2 rounded-full border-2 border-black text-black">
                       <Sparkles className="w-4 h-4" />
