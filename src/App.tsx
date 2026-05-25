@@ -1837,8 +1837,8 @@ export default function App() {
                                 <div className="flex items-center space-x-2">
                                    <AuraCharacter status={item.status} size="sm" />
                                    <div className="text-xs font-black uppercase">
-                                     <div>{t.focus}: {item.focusLevel}%</div>
-                                     <div>{t.mood}: {item.moodLevel}%</div>
+                                     <div className="whitespace-nowrap">{t.focus}: {item.focusLevel}%</div>
+                                     <div className="whitespace-nowrap">{t.mood}: {item.moodLevel}%</div>
                                    </div>
                                 </div>
                                 <div className="text-right flex flex-col justify-center">
