@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, ReactNode } from 'react';
-import { Camera, History, Sparkles, Wind, Brain, Activity, RefreshCw, Palette, Coffee, User, Home, Settings, Layout, Languages, LogOut, UserPlus, Calendar, Smartphone } from 'lucide-react';
+import { Camera, History, Sparkles, Wind, Brain, Activity, RefreshCw, Palette, Coffee, User, Home, Settings, Layout, Languages, LogOut, UserPlus, Calendar, Smartphone, Bell } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { GoogleGenAI, Type } from "@google/genai";
 import { initializeApp } from 'firebase/app';
@@ -593,6 +593,26 @@ export default function App() {
       alert(lang === 'es' 
         ? "Para instalar la aplicación, abre el menú de tu navegador y selecciona 'Añadir a la pantalla de inicio'."
         : "To install the app, open your browser menu and select 'Add to Home Screen'.");
+    }
+  };
+
+  const requestNotificationPermission = async () => {
+    if (!('Notification' in window)) {
+      alert(lang === 'es' ? 'Este navegador no soporta notificaciones de escritorio' : 'This browser does not support desktop notifications');
+      return;
+    }
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then((registration) => {
+          registration.showNotification('BloomMind', {
+            body: lang === 'es' ? '¡Es hora de tu escaneo de Aura!' : 'Time for your Aura scan!',
+            icon: '/icon-192.png',
+            badge: '/icon-192.png',
+          });
+        });
+      }
+      alert(lang === 'es' ? 'Notificaciones activadas. Recibirás un recordatorio diario.' : 'Notifications enabled. You will receive a daily reminder.');
     }
   };
 
@@ -1411,19 +1431,25 @@ export default function App() {
 
             <p className={`text-sm font-bold opacity-60 truncate w-[200px] mx-auto text-ellipsis ${theme === 'dark' ? 'text-white' : 'text-navy-deep'}`}>{currentUser.email}</p>
             
-            <a 
-              href="https://www.instagram.com/annhrlll/" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className={`mt-2 inline-flex items-center space-x-2 px-4 py-2 rounded-full border-2 border-current font-black text-xs uppercase transition-transform active:translate-y-1 ${theme === 'dark' ? 'bg-pink-vibrant text-black' : 'bg-lime-vibrant text-navy-deep'}`}
-            >
-              <span>@annhrlll</span>
-            </a>
-
             <div className={`${theme === 'dark' ? 'bg-blue-vibrant/20 text-white' : 'bg-star-yellow text-navy-deep'} border-2 border-current p-4 rounded-2xl shadow-[0_4px_0_currentColor] mt-4 text-left`}>
               <span className="text-[10px] font-black uppercase opacity-60 block">Planta del mes</span>
               <span className="font-black text-lg leading-tight uppercase">{getPlantOfTheMonth()}</span>
               <p className="text-xs font-bold mt-1 opacity-80">(Basado en tus emociones más frecuentes)</p>
+            </div>
+
+            {/* Credits */}
+            <div className="flex flex-col items-center justify-center pt-2">
+              <span className={`text-[10px] font-black uppercase mb-2 ${theme === 'dark' ? 'text-white/60' : 'text-navy-deep/60'}`}>
+                Desarrollado por BloomMind para
+              </span>
+              <a 
+                href="https://www.instagram.com/annhrlll/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className={`inline-flex items-center space-x-2 px-4 py-2 rounded-full border-2 border-current font-black text-xs uppercase transition-transform active:translate-y-1 ${theme === 'dark' ? 'bg-pink-vibrant text-black' : 'bg-lime-vibrant text-navy-deep'}`}
+              >
+                <span>@annhrlll</span>
+              </a>
             </div>
 
             {/* Theme Toggle */}
@@ -1446,11 +1472,11 @@ export default function App() {
             </div>
 
             <button 
-              onClick={handleInstallClick}
-              className={`w-full mt-4 bg-blue-vibrant text-white font-black py-4 rounded-2xl border-2 border-current shadow-[0_4px_0_currentColor] active:shadow-none active:translate-y-1 transition-all uppercase flex items-center justify-center space-x-2`}
+              onClick={requestNotificationPermission}
+              className={`w-full mt-4 bg-star-yellow text-black font-black py-4 rounded-2xl border-2 border-current shadow-[0_4px_0_currentColor] active:shadow-none active:translate-y-1 transition-all uppercase flex items-center justify-center space-x-2`}
             >
-              <Smartphone className="w-5 h-5" />
-              <span>Instalar BloomMind</span>
+              <Bell className="w-5 h-5" />
+              <span>{lang === 'es' ? 'Activar Recordatorio Diario' : 'Enable Daily Reminder'}</span>
             </button>
 
             <button 
@@ -1482,14 +1508,20 @@ export default function App() {
             <span>Continue with Google</span>
           </button>
 
-          <a 
-            href="https://www.instagram.com/annhrlll/" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className={`mt-6 inline-flex items-center space-x-2 px-4 py-2 rounded-full border-2 border-current font-black text-xs uppercase transition-transform active:translate-y-1 ${theme === 'dark' ? 'bg-pink-vibrant text-black' : 'bg-lime-vibrant text-navy-deep'}`}
-          >
-            <span>@annhrlll</span>
-          </a>
+          {/* Credits */}
+          <div className="flex flex-col items-center justify-center pt-6">
+            <span className={`text-[10px] font-black uppercase mb-2 ${theme === 'dark' ? 'text-white/60' : 'text-navy-deep/60'}`}>
+              Desarrollado por BloomMind para
+            </span>
+            <a 
+              href="https://www.instagram.com/annhrlll/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className={`inline-flex items-center space-x-2 px-4 py-2 rounded-full border-2 border-current font-black text-xs uppercase transition-transform active:translate-y-1 ${theme === 'dark' ? 'bg-pink-vibrant text-black' : 'bg-lime-vibrant text-navy-deep'}`}
+            >
+              <span>@annhrlll</span>
+            </a>
+          </div>
         </div>
 
         {/* Theme Toggle */}
@@ -1512,11 +1544,11 @@ export default function App() {
         </div>
 
         <button 
-          onClick={handleInstallClick}
-          className={`w-full bg-blue-vibrant text-white font-black py-4 rounded-2xl border-2 border-current shadow-[0_4px_0_currentColor] active:shadow-none active:translate-y-1 transition-all uppercase flex items-center justify-center space-x-2`}
+          onClick={requestNotificationPermission}
+          className={`w-full mt-4 bg-star-yellow text-black font-black py-4 rounded-2xl border-2 border-current shadow-[0_4px_0_currentColor] active:shadow-none active:translate-y-1 transition-all uppercase flex items-center justify-center space-x-2`}
         >
-          <Smartphone className="w-5 h-5" />
-          <span>Instalar BloomMind</span>
+          <Bell className="w-5 h-5" />
+          <span>{lang === 'es' ? 'Activar Recordatorio Diario' : 'Enable Daily Reminder'}</span>
         </button>
       </div>
     );
@@ -1541,6 +1573,15 @@ export default function App() {
       >
         <Languages className="w-4 h-4" />
         <span className="text-[10px] font-black uppercase">{lang}</span>
+      </button>
+
+      {/* Floating Install Button */}
+      <button 
+        onClick={handleInstallClick}
+        className="absolute bottom-28 right-6 z-[70] bg-blue-vibrant text-white p-4 rounded-full border-2 border-current shadow-[0_4px_0_currentColor] active:shadow-none active:translate-y-1 transition-all flex items-center justify-center animate-bounce"
+        title="Instalar App"
+      >
+        <Smartphone className="w-6 h-6" />
       </button>
 
       <AnimatePresence mode="wait">
