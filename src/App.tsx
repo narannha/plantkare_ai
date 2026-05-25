@@ -1495,6 +1495,16 @@ export default function App() {
         <span className="text-[10px] font-black uppercase">{lang}</span>
       </button>
 
+      {deferredPrompt && (
+        <button 
+          onClick={installApp}
+          className="absolute bottom-24 right-4 z-[70] bg-blue-vibrant text-white font-black p-4 rounded-full border-2 border-black shadow-[0_4px_0_black] active:shadow-none active:translate-y-1 transition-all flex items-center justify-center"
+          title="Instalar App"
+        >
+          <Smartphone className="w-6 h-6" />
+        </button>
+      )}
+
       <AnimatePresence mode="wait">
         {/* SCAN / SPLASH SCREEN */}
         {activeTab === 'scan' && (
