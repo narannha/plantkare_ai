@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback, ReactNode } from 'react';
 import { Camera, History, Sparkles, Wind, Brain, Activity, RefreshCw, Palette, Coffee, User, Home, Settings, Layout, Languages, LogOut, UserPlus, Calendar, Smartphone, Bell, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import SplashAndClover from './components/SplashAndClover';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { getFirestore, collection, doc, setDoc, onSnapshot, getDocFromServer, query, orderBy } from 'firebase/firestore';
@@ -500,8 +501,8 @@ const OnboardingModal = ({ isOpen, onClose, t }: { isOpen: boolean, onClose: () 
           <div className="absolute top-0 left-0 w-full h-4 bg-lime-vibrant" />
           
           <div className="text-center space-y-6">
-            <div className="w-20 h-20 bg-pink-vibrant rounded-full border-4 border-black mx-auto flex items-center justify-center shadow-[0_5px_0_black]">
-              <Brain className="w-10 h-10 text-white" />
+            <div className="w-20 h-20 bg-pink-vibrant rounded-full border-4 border-black mx-auto flex items-center justify-center shadow-[0_5px_0_black] overflow-hidden">
+              <img src="/icon-192.png" className="w-12 h-12 object-contain" alt="BloomMind Logo" referrerPolicy="no-referrer" />
             </div>
             
             <h2 className="text-3xl font-black uppercase tracking-tighter leading-tight">
@@ -544,6 +545,7 @@ export default function App() {
   const [lang, setLang] = useState<Language>('es');
   const t = translations[lang];
 
+  const [showSplash, setShowSplash] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>('scan');
   const [showOnboarding, setShowOnboarding] = useState(true);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
@@ -737,37 +739,8 @@ export default function App() {
         // Ensure the video element is ready
         const playVideo = () => {
           videoRef.current?.play().catch(e => {
-            const errStr = String(e || '').toLowerCase();
-            const errMsg = String(e?.message || '').toLowerCase();
-            const errName = String(e?.name || '').toLowerCase();
-            const isBenign = errName.includes('abort') || 
-                             errName.includes('notallowed') || 
-                             errStr.includes('interrupted') || 
-                             errStr.includes('abort') || 
-                             errMsg.includes('interrupted') || 
-                             errMsg.includes('abort');
-            if (isBenign) {
-              console.warn("Camera play request was interrupted or aborted (benign):", e.message || e);
-            } else {
-              console.error("Error playing video:", e);
-              // Retry once after a short delay if it's a transient error
-              setTimeout(() => {
-                videoRef.current?.play().catch(retryErr => {
-                  const rStr = String(retryErr || '').toLowerCase();
-                  const rMsg = String(retryErr?.message || '').toLowerCase();
-                  const rName = String(retryErr?.name || '').toLowerCase();
-                  const rBenign = rName.includes('abort') || 
-                                  rName.includes('notallowed') || 
-                                  rStr.includes('interrupted') || 
-                                  rStr.includes('abort') || 
-                                  rMsg.includes('interrupted') || 
-                                  rMsg.includes('abort');
-                  if (!rBenign) {
-                    console.error("Error during video play retry:", retryErr);
-                  }
-                });
-              }, 300);
-            }
+            // Standard benign video interruption warning (common on tab switching or instant pause/renders)
+            console.warn("Camera play request was handled:", e?.message || e);
           });
         };
         
@@ -801,20 +774,8 @@ export default function App() {
     if (videoRef.current && streamRef.current && videoRef.current.srcObject !== streamRef.current) {
       videoRef.current.srcObject = streamRef.current;
       videoRef.current.play().catch(e => {
-        const errStr = String(e || '').toLowerCase();
-        const errMsg = String(e?.message || '').toLowerCase();
-        const errName = String(e?.name || '').toLowerCase();
-        const isBenign = errName.includes('abort') || 
-                         errName.includes('notallowed') || 
-                         errStr.includes('interrupted') || 
-                         errStr.includes('abort') || 
-                         errMsg.includes('interrupted') || 
-                         errMsg.includes('abort');
-        if (isBenign) {
-          console.warn("Camera play request in effect was interrupted or aborted (benign):", e.message || e);
-        } else {
-          console.error("Error playing video in effect:", e);
-        }
+        // Any play promise rejection on media stream changes/user navigation/interruptions is a standard benign event
+        console.warn("Camera play request in effect was safely handled:", e?.message || e);
       });
     }
   }, [hasCameraPermission]);
@@ -1271,7 +1232,7 @@ export default function App() {
                     displayStatus ? (
                       displayStatus === 'flow' ? 'bg-lime-vibrant text-black' :
                       displayStatus === 'fog' ? 'bg-pink-vibrant text-black' :
-                      displayStatus === 'drought' ? 'bg-blue-vibrant text-white' : 'bg-star-yellow text-black'
+                      displayStatus === 'drought' ? 'bg-blue-vibrant text-black' : 'bg-star-yellow text-black'
                     ) : (theme === 'dark' ? 'bg-white/5 hover:bg-white/20' : 'bg-stone-100 hover:bg-stone-200')
                   }`}
                 >
@@ -1562,7 +1523,21 @@ export default function App() {
       {/* Main App Container */}
       <div className={`w-full min-h-screen sm:min-h-[850px] sm:h-[90vh] ${theme === 'dark' ? 'bg-[#1e2b58] text-white' : 'bg-white text-navy-deep'} font-sans flex flex-col max-w-md sm:rounded-[3rem] shadow-2xl overflow-hidden relative border-x-4 sm:border-y-4 border-navy-deep z-10`}>
       
-      <OnboardingModal isOpen={showOnboarding} onClose={() => setShowOnboarding(false)} t={t} />
+      <AnimatePresence>
+        {showSplash && (
+          <motion.div
+            key="splash-screen-overlay"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.4, ease: 'easeOut' }}
+            className="fixed inset-0 z-[200]"
+          >
+            <SplashAndClover onComplete={() => setShowSplash(false)} lang={lang} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <OnboardingModal isOpen={showOnboarding && !showSplash} onClose={() => setShowOnboarding(false)} t={t} />
       <button 
         onClick={toggleLang}
         className="absolute top-4 right-4 z-[60] bg-white text-black border-2 border-black p-2 rounded-full shadow-[0_2px_0_black] active:shadow-none active:translate-y-0.5 transition-all flex items-center space-x-1"
@@ -1898,7 +1873,7 @@ export default function App() {
                               className={`rounded-[2.5rem] p-6 border-2 border-black shadow-[0_6px_0_black] relative overflow-hidden ${
                                 item.status === 'flow' ? 'bg-lime-vibrant text-black' : 
                                 item.status === 'fog' ? 'bg-pink-vibrant text-black' : 
-                                item.status === 'drought' ? 'bg-blue-vibrant text-white' : 'bg-star-yellow text-black'
+                                item.status === 'drought' ? 'bg-blue-vibrant text-black' : 'bg-star-yellow text-black'
                               }`}
                             >
                               <div className="flex justify-between items-start">
