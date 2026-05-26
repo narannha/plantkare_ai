@@ -2011,7 +2011,7 @@ export default function App() {
       {activeTab !== 'scan' && (
         <button 
           onClick={handleInstallClick}
-          className="absolute bottom-[92px] right-[10%] sm:right-[58px] z-50 bg-pink-vibrant hover:bg-[#ff5bb1] text-navy-deep p-3.5 rounded-full border-2 border-current shadow-[0_4px_0_currentColor] active:shadow-none active:translate-y-1 transition-all flex items-center justify-center hover:scale-110 active:scale-95 group animate-bounce"
+          className="absolute bottom-[92px] right-[10%] sm:right-[58px] z-50 bg-white hover:bg-stone-50 text-navy-deep p-1.5 rounded-full border-2 border-current shadow-[0_4px_0_currentColor] active:shadow-none active:translate-y-1 transition-all flex items-center justify-center hover:scale-110 active:scale-95 group animate-bounce"
           title="Instalar App"
         >
           {/* Tooltip text showing on hover */}
@@ -2021,12 +2021,48 @@ export default function App() {
           </span>
 
           {/* Reference Image Inspired Icon Download App */}
-          <img 
-            src={iconDownloadApp} 
-            alt="Download App" 
-            className="w-8 h-8 object-contain rounded-lg select-none"
-            referrerPolicy="no-referrer"
-          />
+          <svg viewBox="0 0 100 100" className="w-11 h-11 select-none pointer-events-none">
+            {/* Splash Blob Background in deep magenta */}
+            <path 
+              d="M 50,13 C 68,13 86,18 88,36 C 90,54 85,71 73,81 C 61,91 41,89 28,81 C 15,73 11,54 13,38 C 15,22 32,13 50,13 Z" 
+              fill="#c2115e" 
+            />
+            {/* Soft decorative golden yellow spots in the blob */}
+            <circle cx="24" cy="48" r="4.5" fill="#ffd02b" opacity="0.15" />
+            <circle cx="76" cy="52" r="4.5" fill="#ffd02b" opacity="0.15" />
+            <polygon points="56,23 57.5,25 60,25.5 57.5,26.5 56,29 54.5,26.5 52,25.5 54.5,25" fill="#ffd02b" opacity="0.4" />
+            <polygon points="34,71 35.5,73 38,73.5 35.5,74.5 34,77 32.5,74.5 30,73.5 32.5,73" fill="#ffd02b" opacity="0.4" />
+
+            {/* SmartDevice casing */}
+            <rect x="36" y="24" width="28" height="52" rx="5" fill="white" stroke="#1e2b58" strokeWidth="2" />
+            
+            {/* Display screen */}
+            <rect x="38.5" y="28.5" width="23" height="43" rx="3" fill="#1e2b58" />
+            
+            {/* Camera dot/speaker */}
+            <circle cx="50" cy="26.2" r="1.2" fill="#1e2b58" />
+            
+            {/* Home pill button */}
+            <rect x="46" y="72.5" width="8" height="2" rx="1" fill="#7dd3fc" />
+            
+            {/* Purple bubble element for the action */}
+            <g>
+              {/* Stem / Arrow shape of the speech bubble pointing down */}
+              <path d="M 48,58 L 50,63 L 52,58 Z" fill="#7c3aed" stroke="#1e2b58" strokeWidth="2.2" strokeLinejoin="round" />
+              {/* Bubble Body */}
+              <rect x="37" y="37" width="26" height="21" rx="4" fill="#7c3aed" stroke="#1e2b58" strokeWidth="2" />
+              {/* Soft overlay to hide overlapping stroke */}
+              <path d="M 48,57.5 L 50,61.5 L 52,57.5" fill="#7c3aed" />
+              
+              {/* Pure white download graphics */}
+              {/* Arrow Stem */}
+              <line x1="50" y1="41.5" x2="50" y2="49.5" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+              {/* Arrow pointer head */}
+              <path d="M 46.5 46.5 L 50 50 L 53.5 46.5" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+              {/* Bottom bracket cup */}
+              <path d="M 45 52.5 L 45 54.5 L 55 54.5 L 55 52.5" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            </g>
+          </svg>
         </button>
       )}
     </div>
