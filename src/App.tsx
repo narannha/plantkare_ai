@@ -503,18 +503,18 @@ const OnboardingModal = ({ isOpen, onClose, t }: { isOpen: boolean, onClose: () 
           <div className="text-center space-y-6">
             <div className="w-20 h-20 bg-pink-vibrant rounded-full border-4 border-black mx-auto flex items-center justify-center shadow-[0_5px_0_black]">
               <svg viewBox="0 0 100 100" className="w-14 h-14">
-                {/* Lobe circles to make it plump, diagonal/X orientation */}
-                <circle cx="39" cy="39" r="18" fill="#1e2b58" />
-                <circle cx="61" cy="39" r="18" fill="#1e2b58" />
-                <circle cx="39" cy="61" r="18" fill="#1e2b58" />
-                <circle cx="61" cy="61" r="18" fill="#1e2b58" />
+                {/* Lobe circles to make it plump, cross/plus orientation */}
+                <circle cx="50" cy="34" r="18" fill="#1e2b58" />
+                <circle cx="50" cy="66" r="18" fill="#1e2b58" />
+                <circle cx="34" cy="50" r="18" fill="#1e2b58" />
+                <circle cx="66" cy="50" r="18" fill="#1e2b58" />
                 <circle cx="50" cy="50" r="16" fill="#1e2b58" />
 
                 {/* Fills */}
-                <circle cx="39" cy="39" r="15" fill="#ffd02b" />
-                <circle cx="61" cy="39" r="15" fill="#ffd02b" />
-                <circle cx="39" cy="61" r="15" fill="#ffd02b" />
-                <circle cx="61" cy="61" r="15" fill="#ffd02b" />
+                <circle cx="50" cy="34" r="15" fill="#ffd02b" />
+                <circle cx="50" cy="66" r="15" fill="#ffd02b" />
+                <circle cx="34" cy="50" r="15" fill="#ffd02b" />
+                <circle cx="66" cy="50" r="15" fill="#ffd02b" />
                 <circle cx="50" cy="50" r="14" fill="#ffd02b" />
 
                 {/* Eye */}
