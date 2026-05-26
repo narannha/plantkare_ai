@@ -587,6 +587,18 @@ export default function App() {
   const trackerYear = 2026;
 
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstalled, setIsInstalled] = useState(false);
+
+  useEffect(() => {
+    const checkInstalled = () => {
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone;
+      setIsInstalled(!!isStandalone);
+    };
+    checkInstalled();
+    const mediaQuery = window.matchMedia('(display-mode: standalone)');
+    mediaQuery.addEventListener('change', checkInstalled);
+    return () => mediaQuery.removeEventListener('change', checkInstalled);
+  }, []);
 
   useEffect(() => {
     const handler = (e: any) => {
@@ -2008,7 +2020,7 @@ export default function App() {
       )}
 
       {/* Floating Install Button - Consistently located above the top-right corner of bottom navigation bar */}
-      {activeTab !== 'scan' && (
+      {activeTab !== 'scan' && !isInstalled && (
         <button 
           onClick={handleInstallClick}
           className="absolute bottom-[92px] right-[10%] sm:right-[58px] z-50 bg-white hover:bg-stone-50 text-navy-deep p-2.5 rounded-full border-2 border-current shadow-[0_5px_0_currentColor] active:shadow-none active:translate-y-1 transition-all flex items-center justify-center hover:scale-110 active:scale-95 group animate-bounce"
