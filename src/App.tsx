@@ -611,8 +611,19 @@ export default function App() {
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
-  const handleInstallClick = () => {
-    setShowInstallGuide(true);
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log(`User response to the install prompt: ${outcome}`);
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+        setIsInstalled(true);
+        setShowInstallGuide(false);
+      }
+    } else {
+      setShowInstallGuide(true);
+    }
   };
 
   const triggerNativePrompt = async () => {
