@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, ReactNode } from 'react';
-import { Camera, History, Sparkles, Wind, Brain, Activity, RefreshCw, Palette, Coffee, User, Home, Settings, Layout, Languages, LogOut, UserPlus, Calendar, Smartphone, Bell } from 'lucide-react';
+import { Camera, History, Sparkles, Wind, Brain, Activity, RefreshCw, Palette, Coffee, User, Home, Settings, Layout, Languages, LogOut, UserPlus, Calendar, Smartphone, Bell, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
@@ -1982,10 +1982,36 @@ export default function App() {
       {activeTab !== 'scan' && (
         <button 
           onClick={handleInstallClick}
-          className={`absolute bottom-[92px] right-[10%] sm:right-[58px] z-50 bg-blue-vibrant text-white p-3.5 rounded-full border-2 border-current shadow-[0_4px_0_currentColor] active:shadow-none active:translate-y-1 transition-all flex items-center justify-center hover:scale-105 active:scale-95 animate-bounce`}
+          className="absolute bottom-[92px] right-[10%] sm:right-[58px] z-50 bg-pink-vibrant hover:bg-[#ff5bb1] text-navy-deep p-3.5 rounded-full border-2 border-current shadow-[0_4px_0_currentColor] active:shadow-none active:translate-y-1 transition-all flex items-center justify-center hover:scale-110 active:scale-95 group animate-bounce"
           title="Instalar App"
         >
-          <Smartphone className="w-5 h-5" />
+          {/* Tooltip text showing on hover */}
+          <span className="absolute right-full mr-3 whitespace-nowrap bg-navy-deep text-white border-2 border-current px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider shadow-[3px_3px_0_currentColor] opacity-0 scale-90 translate-x-3 group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 transition-all duration-300 pointer-events-none z-50 flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-lime-vibrant fill-lime-vibrant animate-pulse" />
+            {lang === 'es' ? 'Descargar App Floral' : 'Download Floral App'}
+          </span>
+
+          {/* Reference Image Inspired Smartphone + Download Badge Icon Combo */}
+          <div className="relative w-8 h-8 flex items-center justify-center">
+            {/* Miniature Smartphone Device Container */}
+            <div className="w-5 h-8 border-2 border-navy-deep bg-white rounded-md flex flex-col justify-between items-center p-0.5 relative z-10 shadow-[1px_1px_0_rgba(30,43,88,0.2)]">
+              {/* Notch / Camera point */}
+              <div className="w-2 h-0.5 bg-navy-deep rounded-full opacity-80" />
+              
+              {/* Screen Area containing the Download symbol */}
+              <div className="flex-1 flex items-center justify-center w-full">
+                <Download className="w-3 h-3 text-navy-deep/40 stroke-[2]" />
+              </div>
+              
+              {/* Home Pill button */}
+              <div className="w-2.5 h-0.5 bg-navy-deep rounded-full opacity-55" />
+            </div>
+
+            {/* Overlapping Download Badge inspired by the Purple Card inside the reference image */}
+            <div className="absolute bottom-1 -right-0.5 bg-[#8b5cf6] text-white border border-navy-deep rounded px-[2.5px] py-[1.5px] shadow-[1px_1px_0_currentColor] z-20 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <Download className="w-2.5 h-2.5 stroke-[3]" />
+            </div>
+          </div>
         </button>
       )}
     </div>
