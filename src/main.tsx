@@ -28,13 +28,19 @@ class ErrorBoundary extends Component<{children: ReactNode}, {hasError: boolean,
 }
 
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
+  const registerSW = () => {
     navigator.serviceWorker.register('/sw.js').then((registration) => {
       console.log('SW registered: ', registration);
     }).catch((registrationError) => {
-      console.log('SW registration failed: ', registrationError);
+      console.error('No se pudo registrar el service worker:', registrationError);
     });
-  });
+  };
+
+  if (document.readyState === 'complete') {
+    registerSW();
+  } else {
+    window.addEventListener('load', registerSW);
+  }
 }
 
 createRoot(document.getElementById('root')!).render(
