@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect, useCallback, ReactNode } from 'react';
 import { Camera, History, Sparkles, Wind, Brain, Activity, RefreshCw, Palette, Coffee, User, Home, Settings, Layout, Languages, LogOut, UserPlus, Calendar, Smartphone, Bell } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { GoogleGenAI, Type } from "@google/genai";
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { getFirestore, collection, doc, setDoc, onSnapshot, getDocFromServer, query, orderBy } from 'firebase/firestore';
@@ -10,17 +9,6 @@ import firebaseConfig from '../firebase-applet-config.json';
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 const auth = getAuth(app);
-
-// WARNING: Client-side API key usage is intended for demo/prototyping purposes only.
-// If deploying to production, please implement a backend to proxy API requests and secure the key.
-const getAiInstance = () => {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  if (!apiKey) {
-    console.error("VITE_GEMINI_API_KEY is not defined.");
-    return null;
-  }
-  return new GoogleGenAI({ apiKey });
-};
 
 // --- Types ---
 type CreativeState = 'flow' | 'fog' | 'drought' | 'storm';
@@ -749,9 +737,19 @@ export default function App() {
         // Ensure the video element is ready
         const playVideo = () => {
           videoRef.current?.play().catch(e => {
-            console.error("Error playing video:", e);
-            // Retry once after a short delay if it's a transient error
-            setTimeout(() => videoRef.current?.play(), 300);
+            if (e.name === 'AbortError' || e.name?.includes('Abort') || e.message?.toLowerCase().includes('interrupted') || e.message?.toLowerCase().includes('abort')) {
+              console.warn("Camera play request was interrupted or aborted (benign):", e.message);
+            } else {
+              console.error("Error playing video:", e);
+              // Retry once after a short delay if it's a transient error
+              setTimeout(() => {
+                videoRef.current?.play().catch(retryErr => {
+                  if (retryErr.name !== 'AbortError' && !retryErr.name?.includes('Abort') && !retryErr.message?.toLowerCase().includes('interrupted')) {
+                    console.error("Error during video play retry:", retryErr);
+                  }
+                });
+              }, 300);
+            }
           });
         };
         
@@ -784,7 +782,13 @@ export default function App() {
   useEffect(() => {
     if (videoRef.current && streamRef.current && videoRef.current.srcObject !== streamRef.current) {
       videoRef.current.srcObject = streamRef.current;
-      videoRef.current.play().catch(e => console.error("Error playing video in effect:", e));
+      videoRef.current.play().catch(e => {
+        if (e.name === 'AbortError' || e.name?.includes('Abort') || e.message?.toLowerCase().includes('interrupted') || e.message?.toLowerCase().includes('abort')) {
+          console.warn("Camera play request in effect was interrupted or aborted (benign):", e.message);
+        } else {
+          console.error("Error playing video in effect:", e);
+        }
+      });
     }
   }, [hasCameraPermission]);
 
@@ -824,51 +828,21 @@ export default function App() {
     console.log("Starting AI analysis...");
 
     try {
-      const ai = getAiInstance();
-      if (!ai) {
-        throw new Error("Missing Gemini API Key. Please add VITE_GEMINI_API_KEY to your Vercel Environment Variables.");
-      }
-
-      // Extract base64 completely without the prefix
-      const base64Data = capturedImage.split(',')[1];
-      
-      const response = await ai.models.generateContent({
-        model: "gemini-flash-latest",
-        contents: {
-          parts: [
-            {
-              inlineData: {
-                data: base64Data,
-                mimeType: "image/jpeg",
-              },
-            },
-            {
-              text: "Analyze the facial expression, environment, and overall vibe of this image of a creative person. Base your answer strictly on 4 statuses related to creative block: 'flow' (Saturated Mind - active, slightly chaotic but brilliant), 'fog' (Mental Fog - confused, distracted, unsure), 'drought' (Total Block, Low Energy - tired, frustrated, blank stare), or 'storm' (Excess Pressure - intense, perfect-seeking, stressed). Then estimate their focusLevel (1-100), moodLevel (1-100), blockLevel (1-100), serenity (1-100), and energy (1-100). Return ONLY A VALID JSON MATCHING THIS EXACT SCHEMA AND NOTHING ELSE.",
-            },
-          ],
+      const fetchResponse = await fetch("/api/scan", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              status: {
-                type: Type.STRING,
-                description: "Must be exactly one of: 'flow', 'fog', 'drought', 'storm'",
-              },
-              focusLevel: { type: Type.INTEGER },
-              moodLevel: { type: Type.INTEGER },
-              blockLevel: { type: Type.INTEGER },
-              serenity: { type: Type.INTEGER },
-              energy: { type: Type.INTEGER },
-            },
-            required: ["status", "focusLevel", "moodLevel", "blockLevel", "serenity", "energy"],
-          },
-        },
+        body: JSON.stringify({ capturedImage }),
       });
 
-      console.log("AI Response received:", response.text);
-      const parsedJson = JSON.parse(response.text || '{}');
+      if (!fetchResponse.ok) {
+        const errJson = await fetchResponse.json().catch(() => ({}));
+        throw new Error(errJson.error || `Server responded with ${fetchResponse.status}`);
+      }
+
+      const parsedJson = await fetchResponse.json();
+      console.log("AI Response received:", parsedJson);
       const validStatuses = ['flow', 'fog', 'drought', 'storm'];
       const determinedStatus = (validStatuses.includes(parsedJson.status) ? parsedJson.status : 'fog') as CreativeState;
 
@@ -1394,7 +1368,7 @@ export default function App() {
   const renderProfile = () => {
     if (currentUser) {
       return (
-        <div className={`p-6 space-y-6 ${theme === 'dark' ? 'dark text-white' : ''}`}>
+        <div className={`p-6 space-y-6 pb-24 ${theme === 'dark' ? 'dark text-white' : ''}`}>
           <div className={`${theme === 'dark' ? 'bg-[#2a3c75] border-blue-vibrant shadow-[0_10px_0_#7db1ff]' : 'bg-white border-black shadow-[0_10px_0_black]'} border-4 p-8 rounded-[3rem] text-center space-y-4 relative`}>
             <div className={`w-32 h-32 ${theme === 'dark' ? 'bg-white/20' : 'bg-stone-100'} rounded-full border-4 border-current mx-auto flex items-center justify-center overflow-hidden`}>
               {currentUser.photoURL ? (
@@ -1437,21 +1411,6 @@ export default function App() {
               <p className="text-xs font-bold mt-1 opacity-80">(Basado en tus emociones más frecuentes)</p>
             </div>
 
-            {/* Credits */}
-            <div className="flex flex-col items-center justify-center pt-2">
-              <span className={`text-[10px] font-black uppercase mb-2 ${theme === 'dark' ? 'text-white/60' : 'text-navy-deep/60'}`}>
-                Desarrollado por BloomMind para
-              </span>
-              <a 
-                href="https://www.instagram.com/annhrlll/" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className={`inline-flex items-center space-x-2 px-4 py-2 rounded-full border-2 border-current font-black text-xs uppercase transition-transform active:translate-y-1 ${theme === 'dark' ? 'bg-pink-vibrant text-black' : 'bg-lime-vibrant text-navy-deep'}`}
-              >
-                <span>@annhrlll</span>
-              </a>
-            </div>
-
             {/* Theme Toggle */}
             <div className={`mt-4 p-4 rounded-2xl border-2 border-current ${theme === 'dark' ? 'bg-white/5' : 'bg-stone-50'} flex items-center justify-between`}>
               <div className="flex items-center space-x-2">
@@ -1471,9 +1430,10 @@ export default function App() {
               </button>
             </div>
 
+            {/* Daily Reminder Button directly below Theme Toggle */}
             <button 
               onClick={requestNotificationPermission}
-              className={`w-full mt-4 bg-star-yellow text-black font-black py-4 rounded-2xl border-2 border-current shadow-[0_4px_0_currentColor] active:shadow-none active:translate-y-1 transition-all uppercase flex items-center justify-center space-x-2`}
+              className={`w-full mt-4 bg-star-yellow text-navy-deep font-black py-4 rounded-2xl border-2 border-current shadow-[0_4px_0_currentColor] active:shadow-none active:translate-y-1 transition-all uppercase flex items-center justify-center space-x-2`}
             >
               <Bell className="w-5 h-5" />
               <span>{lang === 'es' ? 'Activar Recordatorio Diario' : 'Enable Daily Reminder'}</span>
@@ -1487,12 +1447,24 @@ export default function App() {
               <span>{t.logout}</span>
             </button>
           </div>
+
+          {/* Credits outside the card layout at bottom space */}
+          <div className="flex flex-col items-center justify-center py-2 pb-6">
+            <a 
+              href="https://www.instagram.com/annhrlll/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className={`inline-flex items-center space-x-2 px-5 py-2.5 rounded-full border-2 border-current font-black text-xs uppercase shadow-[0_3px_0_currentColor] active:shadow-none active:translate-y-0.5 transition-all ${theme === 'dark' ? 'bg-pink-vibrant text-black' : 'bg-lime-vibrant text-navy-deep'}`}
+            >
+              <span>Desarrollado por @annhrlll</span>
+            </a>
+          </div>
         </div>
       );
     }
 
     return (
-      <div className="p-6 space-y-6">
+      <div className="p-6 space-y-6 pb-24">
           <div className={`${theme === 'dark' ? 'bg-[#2a3c75] border-blue-vibrant text-white shadow-[0_10px_0_#7db1ff]' : 'bg-white border-black text-navy-deep shadow-[0_10px_0_black]'} border-4 p-8 rounded-[3rem] space-y-6 text-center`}>
           <div className={`w-24 h-24 ${theme === 'dark' ? 'bg-white/20' : 'bg-stone-100'} rounded-full border-4 border-current mx-auto flex items-center justify-center mb-4`}>
              <User className={`w-10 h-10 ${theme === 'dark' ? 'text-white' : 'text-navy-deep'} opacity-30`} />
@@ -1507,21 +1479,6 @@ export default function App() {
             <UserPlus className="w-5 h-5" />
             <span>Continue with Google</span>
           </button>
-
-          {/* Credits */}
-          <div className="flex flex-col items-center justify-center pt-6">
-            <span className={`text-[10px] font-black uppercase mb-2 ${theme === 'dark' ? 'text-white/60' : 'text-navy-deep/60'}`}>
-              Desarrollado por BloomMind para
-            </span>
-            <a 
-              href="https://www.instagram.com/annhrlll/" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className={`inline-flex items-center space-x-2 px-4 py-2 rounded-full border-2 border-current font-black text-xs uppercase transition-transform active:translate-y-1 ${theme === 'dark' ? 'bg-pink-vibrant text-black' : 'bg-lime-vibrant text-navy-deep'}`}
-            >
-              <span>@annhrlll</span>
-            </a>
-          </div>
         </div>
 
         {/* Theme Toggle */}
@@ -1550,6 +1507,18 @@ export default function App() {
           <Bell className="w-5 h-5" />
           <span>{lang === 'es' ? 'Activar Recordatorio Diario' : 'Enable Daily Reminder'}</span>
         </button>
+
+        {/* Credits outside the card layout at bottom space */}
+        <div className="flex flex-col items-center justify-center py-2 pb-6">
+          <a 
+            href="https://www.instagram.com/annhrlll/" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className={`inline-flex items-center space-x-2 px-5 py-2.5 rounded-full border-2 border-current font-black text-xs uppercase shadow-[0_3px_0_currentColor] active:shadow-none active:translate-y-0.5 transition-all ${theme === 'dark' ? 'bg-pink-vibrant text-black' : 'bg-lime-vibrant text-navy-deep'}`}
+          >
+            <span>Desarrollado por @annhrlll</span>
+          </a>
+        </div>
       </div>
     );
   };
@@ -1573,15 +1542,6 @@ export default function App() {
       >
         <Languages className="w-4 h-4" />
         <span className="text-[10px] font-black uppercase">{lang}</span>
-      </button>
-
-      {/* Floating Install Button */}
-      <button 
-        onClick={handleInstallClick}
-        className="absolute bottom-28 right-6 z-[70] bg-blue-vibrant text-white p-4 rounded-full border-2 border-current shadow-[0_4px_0_currentColor] active:shadow-none active:translate-y-1 transition-all flex items-center justify-center animate-bounce"
-        title="Instalar App"
-      >
-        <Smartphone className="w-6 h-6" />
       </button>
 
       <AnimatePresence mode="wait">
@@ -2016,6 +1976,17 @@ export default function App() {
             <User className="w-6 h-6" />
           </button>
         </div>
+      )}
+
+      {/* Floating Install Button - Consistently located above the top-right corner of bottom navigation bar */}
+      {activeTab !== 'scan' && (
+        <button 
+          onClick={handleInstallClick}
+          className={`absolute bottom-[92px] right-[10%] sm:right-[58px] z-50 bg-blue-vibrant text-white p-3.5 rounded-full border-2 border-current shadow-[0_4px_0_currentColor] active:shadow-none active:translate-y-1 transition-all flex items-center justify-center hover:scale-105 active:scale-95 animate-bounce`}
+          title="Instalar App"
+        >
+          <Smartphone className="w-5 h-5" />
+        </button>
       )}
     </div>
     </div>
