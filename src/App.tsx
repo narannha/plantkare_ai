@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, ReactNode } from 'react';
-import { Camera, History, Sparkles, Wind, Brain, Activity, RefreshCw, Palette, Coffee, User, Home, Settings, Layout, Languages, LogOut, UserPlus, Calendar, Smartphone, Bell, Download, Share, PlusSquare, Check, X, Laptop } from 'lucide-react';
+import { Camera, History, Sparkles, Wind, Brain, Activity, RefreshCw, Palette, Coffee, User, Home, Settings, Layout, Languages, LogOut, UserPlus, Calendar, Smartphone, Bell, Download, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import SplashAndClover from './components/SplashAndClover';
 import { initializeApp } from 'firebase/app';
@@ -588,6 +588,8 @@ export default function App() {
 
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [showPwaBanner, setShowPwaBanner] = useState(true);
+  const [isQuotaExceeded, setIsQuotaExceeded] = useState(false);
 
   useEffect(() => {
     const checkInstalled = () => {
@@ -617,7 +619,6 @@ export default function App() {
       console.log(`User response to the install prompt: ${outcome}`);
       if (outcome === 'accepted') {
         setDeferredPrompt(null);
-        setIsInstalled(true);
       }
     }
   };
@@ -650,10 +651,35 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // Sync Firestore history & tracker
+  // Sync Firestore history & tracker with offline fallback for Quota Exceeded error
   useEffect(() => {
     if (!currentUser) {
       return;
+    }
+
+    // Immediately load from localStorage cache for instant fast loading
+    const cachedAuras = localStorage.getItem(`bloommind_auras_${currentUser.uid}`);
+    if (cachedAuras) {
+      try {
+        setHistory(JSON.parse(cachedAuras));
+      } catch (e) {
+        console.warn("Could not parse cached auras:", e);
+      }
+    }
+
+    const cachedTracker = localStorage.getItem(`bloommind_tracker_${currentUser.uid}`);
+    if (cachedTracker) {
+      try {
+        setTrackerDays(JSON.parse(cachedTracker));
+      } catch (e) {
+        console.warn("Could not parse cached tracker:", e);
+      }
+    }
+
+    // Default to today Colombia
+    const colToday = getColombiaDateString(new Date());
+    if (!selectedHistoryDate) {
+      setSelectedHistoryDate(colToday);
     }
 
     const aurasQuery = query(
@@ -667,14 +693,18 @@ export default function App() {
         auras.push(doc.data() as AuraState);
       });
       setHistory(auras);
-      
-      // Default to today Colombia
-      const colToday = getColombiaDateString(new Date());
-      if (!selectedHistoryDate) {
-        setSelectedHistoryDate(colToday);
-      }
+      // Update cache
+      localStorage.setItem(`bloommind_auras_${currentUser.uid}`, JSON.stringify(auras));
     }, (error) => {
-       console.error("Firestore error:", error);
+       console.error("Firestore error (auras snapshot) - using local cache fallback:", error);
+       setIsQuotaExceeded(true);
+       // Load cache in case snap failed
+       const cached = localStorage.getItem(`bloommind_auras_${currentUser.uid}`);
+       if (cached) {
+         try {
+           setHistory(JSON.parse(cached));
+         } catch (e) {}
+       }
     });
 
     const trackerQuery = collection(db, 'users', currentUser.uid, 'tracker');
@@ -684,8 +714,18 @@ export default function App() {
         td[d.id] = d.data().status as CreativeState;
       });
       setTrackerDays(td);
+      // Update cache
+      localStorage.setItem(`bloommind_tracker_${currentUser.uid}`, JSON.stringify(td));
     }, (error) => {
-       console.error("Firestore error:", error);
+       console.error("Firestore error (tracker snapshot) - using local cache fallback:", error);
+       setIsQuotaExceeded(true);
+       // Load cache in case snap failed
+       const cached = localStorage.getItem(`bloommind_tracker_${currentUser.uid}`);
+       if (cached) {
+         try {
+           setTrackerDays(JSON.parse(cached));
+         } catch (e) {}
+       }
     });
 
     return () => {
@@ -893,13 +933,38 @@ export default function App() {
       };
 
       if (currentUser) {
-        console.log("Saving to Firestore for user:", currentUser.uid);
+        // Prepare local cache updates immediately
+        const prevAuras = (() => {
+          const cached = localStorage.getItem(`bloommind_auras_${currentUser.uid}`);
+          if (cached) {
+            try { return JSON.parse(cached); } catch(e) {}
+          }
+          return history;
+        })();
+        const updatedAuras = [newAura, ...prevAuras].sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+        localStorage.setItem(`bloommind_auras_${currentUser.uid}`, JSON.stringify(updatedAuras));
+
+        const prevTracker = (() => {
+          const cached = localStorage.getItem(`bloommind_tracker_${currentUser.uid}`);
+          if (cached) {
+            try { return JSON.parse(cached); } catch(e) {}
+          }
+          return trackerDays;
+        })();
+        const trackerId = getColombiaTrackerID(now);
+        const updatedTracker = { ...prevTracker, [trackerId]: determinedStatus };
+        localStorage.setItem(`bloommind_tracker_${currentUser.uid}`, JSON.stringify(updatedTracker));
+
+        // Update local React state immediately for snappy responsive feel
+        setHistory(updatedAuras);
+        setTrackerDays(updatedTracker);
+
+        console.log("Saving to Firestore for user eager cache complete:", currentUser.uid);
         try {
           const docRef = doc(db, 'users', currentUser.uid, 'auras', newId);
           await setDoc(docRef, newAura);
           
           // Also update daily tracker
-          const trackerId = getColombiaTrackerID(now);
           const trackerRef = doc(db, 'users', currentUser.uid, 'tracker', trackerId);
           await setDoc(trackerRef, {
             status: determinedStatus,
@@ -907,15 +972,16 @@ export default function App() {
           }, { merge: true });
         } catch (error) {
           console.error("Firebase save failed:", error);
+          setIsQuotaExceeded(true);
         }
-      } 
-      
-      // Always update local state for immediate feedback
-      setHistory(prev => {
-        if (prev.some(h => h.id === newAura.id)) return prev;
-        const updated = [newAura, ...prev];
-        return updated.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
-      });
+      } else {
+        // Update local state for anonymous users
+        setHistory(prev => {
+          if (prev.some(h => h.id === newAura.id)) return prev;
+          const updated = [newAura, ...prev];
+          return updated.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+        });
+      }
 
       setCurrentAura(newAura);
       setActiveTab('diagnosis');
@@ -928,11 +994,37 @@ export default function App() {
       if (currentUser) {
         fallbackAura.userId = currentUser.uid;
         fallbackAura.createdAt = Date.now();
+
+        // Save fallback to cached state and localStorage first
+        const prevAuras = (() => {
+          const cached = localStorage.getItem(`bloommind_auras_${currentUser.uid}`);
+          if (cached) {
+            try { return JSON.parse(cached); } catch(e) {}
+          }
+          return history;
+        })();
+        const updatedAuras = [fallbackAura, ...prevAuras].sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+        localStorage.setItem(`bloommind_auras_${currentUser.uid}`, JSON.stringify(updatedAuras));
+
+        const prevTracker = (() => {
+          const cached = localStorage.getItem(`bloommind_tracker_${currentUser.uid}`);
+          if (cached) {
+            try { return JSON.parse(cached); } catch(e) {}
+          }
+          return trackerDays;
+        })();
+        const trackerId = getColombiaTrackerID(new Date());
+        const updatedTracker = { ...prevTracker, [trackerId]: fallbackAura.status };
+        localStorage.setItem(`bloommind_tracker_${currentUser.uid}`, JSON.stringify(updatedTracker));
+
+        // Set state optimistically
+        setHistory(updatedAuras);
+        setTrackerDays(updatedTracker);
+
         try {
           await setDoc(doc(db, 'users', currentUser.uid, 'auras', fallbackAura.id), fallbackAura);
           
           // Also update daily tracker for fallback
-          const trackerId = getColombiaTrackerID(new Date());
           const trackerRef = doc(db, 'users', currentUser.uid, 'tracker', trackerId);
           await setDoc(trackerRef, {
             status: fallbackAura.status,
@@ -940,6 +1032,7 @@ export default function App() {
           }, { merge: true });
         } catch (e) {
           console.error("Firestore fallback save failed:", e);
+          setIsQuotaExceeded(true);
         }
       } else {
         setHistory(prev => [fallbackAura, ...prev]);
@@ -1154,6 +1247,17 @@ export default function App() {
     else if (currentStatus === 'fog') nextStatus = 'drought';
     else nextStatus = null; // Remove it if clicking again
 
+    // Optimistically update local state and localStorage cache
+    const updatedTracker = { ...trackerDays };
+    if (nextStatus) {
+      updatedTracker[dateStr] = nextStatus;
+    } else {
+      // In case they click to cycle/reset, we treat it as flow/delete
+      updatedTracker[dateStr] = 'flow';
+    }
+    setTrackerDays(updatedTracker);
+    localStorage.setItem(`bloommind_tracker_${currentUser.uid}`, JSON.stringify(updatedTracker));
+
     try {
       if (nextStatus) {
         await setDoc(doc(db, 'users', currentUser.uid, 'tracker', dateStr), {
@@ -1170,6 +1274,7 @@ export default function App() {
       }
     } catch (error) {
       console.error("Error updating tracker", error);
+      setIsQuotaExceeded(true);
     }
   };
 
@@ -1463,6 +1568,26 @@ export default function App() {
               <span>{lang === 'es' ? 'Activar Recordatorio Diario' : 'Enable Daily Reminder'}</span>
             </button>
 
+            {/* PWA Download Banner in Profile */}
+            {!isInstalled && (
+              <div className={`p-4 rounded-3xl border-2 border-dashed border-current ${theme === 'dark' ? 'bg-[#7db1ff]/10 text-white' : 'bg-lime-vibrant/10 text-navy-deep'} flex flex-col items-center text-center space-y-2 mt-4`}>
+                <div className="flex items-center gap-1.5 justify-center">
+                  <Smartphone className="w-5 h-5 text-[#ff5bb1] animate-pulse" />
+                  <span className="text-xs font-black uppercase tracking-wider">{lang === 'es' ? 'Descargar App Floral' : 'Download Floral App'}</span>
+                </div>
+                <p className="text-[10px] font-bold opacity-80 leading-normal max-w-[260px] mx-auto">
+                  {lang === 'es' ? 'Instala BloomMind en tu pantalla de inicio para mayor comodidad y rapidez.' : 'Install BloomMind on your home screen for greater ease and speed.'}
+                </p>
+                <button
+                  onClick={handleInstallClick}
+                  className="mt-1 px-4 py-2.5 bg-lime-vibrant hover:bg-lime-300 text-black text-xs font-black uppercase rounded-2xl border-2 border-black shadow-[0_3.5px_0_black] active:shadow-none active:translate-y-0.5 transition-all w-full flex items-center justify-center gap-1.5"
+                >
+                  <Download className="w-4 h-4" />
+                  {lang === 'es' ? 'Instalar Aplicación' : 'Install Application'}
+                </button>
+              </div>
+            )}
+
             <button 
               onClick={handleLogout}
               className={`w-full mt-4 bg-pink-vibrant text-black font-black py-4 rounded-2xl border-2 border-current shadow-[0_4px_0_currentColor] active:shadow-none active:translate-y-1 transition-all uppercase flex items-center justify-center space-x-2`}
@@ -1574,6 +1699,22 @@ export default function App() {
       </AnimatePresence>
 
       <OnboardingModal isOpen={showOnboarding && !showSplash} onClose={() => setShowOnboarding(false)} t={t} />
+
+      {isQuotaExceeded && (
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="absolute top-4 left-4 z-[60] bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-200 border-2 border-amber-500 px-3 py-1.5 rounded-full flex items-center space-x-1.5 shadow-[0_2.5px_0_currentColor] active:translate-y-0.5 transition-all cursor-help animate-bounce"
+          style={{ animationDuration: '3s' }}
+          title={lang === 'es' ? 'La base de datos tiene límite de cuota hoy. Tus datos se guardan de forma segura en este navegador.' : 'The database has a daily limit reached. Your progress is saved safely inside this browser.'}
+        >
+          <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+          <span className="text-[9px] font-black uppercase tracking-wider">
+            {lang === 'es' ? 'Modo Local' : 'Local Mode'}
+          </span>
+        </motion.div>
+      )}
+
       <button 
         onClick={toggleLang}
         className="absolute top-4 right-4 z-[60] bg-white text-black border-2 border-black p-2 rounded-full shadow-[0_2px_0_black] active:shadow-none active:translate-y-0.5 transition-all flex items-center space-x-1"
@@ -1603,6 +1744,39 @@ export default function App() {
                 {t.title.split(' ').slice(5).join(' ')}
               </h1>
             </div>
+
+            {/* PWA top banner inside Scan tab */}
+            {!isInstalled && showPwaBanner && (
+              <motion.div 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-4 p-3 bg-white/10 backdrop-blur-xs rounded-2xl border-2 border-lime-vibrant flex gap-3 text-left relative z-20"
+              >
+                <div className="p-2 bg-lime-vibrant rounded-xl border-2 border-black flex items-center justify-center text-black self-start">
+                  <Smartphone className="w-4.5 h-4.5" />
+                </div>
+                <div className="flex-1 space-y-1">
+                  <h4 className="text-xs font-black uppercase tracking-wider text-lime-vibrant leading-none">
+                    {lang === 'es' ? 'BloomMind en tu Celular' : 'BloomMind on your Phone'}
+                  </h4>
+                  <p className="text-[10px] font-bold text-white/80 leading-snug">
+                    {lang === 'es' ? 'Instala la app para escanear más rápido y sin barras del navegador.' : 'Install the app for faster scans without browser bars.'}
+                  </p>
+                  <button 
+                    onClick={handleInstallClick}
+                    className="mt-1 text-[10px] font-black uppercase text-lime-vibrant underline hover:text-white transition-colors block text-left"
+                  >
+                    {lang === 'es' ? 'Instalar ahora ➔' : 'Install now ➔'}
+                  </button>
+                </div>
+                <button 
+                  onClick={() => setShowPwaBanner(false)}
+                  className="text-white/40 hover:text-white hover:bg-white/10 p-1 rounded-full self-start transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </motion.div>
+            )}
 
             <div className="flex-1 flex flex-col items-center justify-center relative">
               {/* Sticker elements */}
@@ -2017,7 +2191,7 @@ export default function App() {
       )}
 
       {/* Floating Install Button - Consistently located above the top-right corner of bottom navigation bar */}
-      {activeTab !== 'scan' && deferredPrompt && !isInstalled && (
+      {activeTab !== 'scan' && !isInstalled && (
         <button 
           onClick={handleInstallClick}
           className="absolute bottom-[92px] right-[10%] sm:right-[58px] z-50 bg-white hover:bg-stone-50 text-navy-deep p-2.5 rounded-full border-2 border-current shadow-[0_5px_0_currentColor] active:shadow-none active:translate-y-1 transition-all flex items-center justify-center hover:scale-110 active:scale-95 group animate-bounce"
@@ -2026,7 +2200,7 @@ export default function App() {
           {/* Tooltip text showing on hover */}
           <span className="absolute right-full mr-3 whitespace-nowrap bg-navy-deep text-white border-2 border-current px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider shadow-[3px_3px_0_currentColor] opacity-0 scale-90 translate-x-3 group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 transition-all duration-300 pointer-events-none z-50 flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5 text-lime-vibrant fill-lime-vibrant animate-pulse" />
-            {lang === 'es' ? 'Instalar App' : 'Install App'}
+            {lang === 'es' ? 'Descargar App Floral' : 'Download Floral App'}
           </span>
           
           {/* Reference Image Inspired Icon Download App */}
