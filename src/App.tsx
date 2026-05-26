@@ -6,6 +6,7 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { getFirestore, collection, doc, setDoc, onSnapshot, getDocFromServer, query, orderBy } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
+import iconDownloadApp from './assets/images/icon_downloadapp_1779809929680.png';
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
@@ -2019,27 +2020,13 @@ export default function App() {
             {lang === 'es' ? 'Descargar App Floral' : 'Download Floral App'}
           </span>
 
-          {/* Reference Image Inspired Smartphone + Download Badge Icon Combo */}
-          <div className="relative w-8 h-8 flex items-center justify-center">
-            {/* Miniature Smartphone Device Container */}
-            <div className="w-5 h-8 border-2 border-navy-deep bg-white rounded-md flex flex-col justify-between items-center p-0.5 relative z-10 shadow-[1px_1px_0_rgba(30,43,88,0.2)]">
-              {/* Notch / Camera point */}
-              <div className="w-2 h-0.5 bg-navy-deep rounded-full opacity-80" />
-              
-              {/* Screen Area containing the Download symbol */}
-              <div className="flex-1 flex items-center justify-center w-full">
-                <Download className="w-3 h-3 text-navy-deep/40 stroke-[2]" />
-              </div>
-              
-              {/* Home Pill button */}
-              <div className="w-2.5 h-0.5 bg-navy-deep rounded-full opacity-55" />
-            </div>
-
-            {/* Overlapping Download Badge inspired by the Purple Card inside the reference image */}
-            <div className="absolute bottom-1 -right-0.5 bg-[#8b5cf6] text-white border border-navy-deep rounded px-[2.5px] py-[1.5px] shadow-[1px_1px_0_currentColor] z-20 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Download className="w-2.5 h-2.5 stroke-[3]" />
-            </div>
-          </div>
+          {/* Reference Image Inspired Icon Download App */}
+          <img 
+            src={iconDownloadApp} 
+            alt="Download App" 
+            className="w-8 h-8 object-contain rounded-lg select-none"
+            referrerPolicy="no-referrer"
+          />
         </button>
       )}
     </div>
