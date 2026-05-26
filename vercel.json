@@ -1,7 +1,8 @@
 {
+  "cleanUrls": true,
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/((?!api|assets|static|.*\\.).*)",
       "destination": "/index.html"
     }
   ]

@@ -737,14 +737,32 @@ export default function App() {
         // Ensure the video element is ready
         const playVideo = () => {
           videoRef.current?.play().catch(e => {
-            if (e.name === 'AbortError' || e.name?.includes('Abort') || e.message?.toLowerCase().includes('interrupted') || e.message?.toLowerCase().includes('abort')) {
-              console.warn("Camera play request was interrupted or aborted (benign):", e.message);
+            const errStr = String(e || '').toLowerCase();
+            const errMsg = String(e?.message || '').toLowerCase();
+            const errName = String(e?.name || '').toLowerCase();
+            const isBenign = errName.includes('abort') || 
+                             errName.includes('notallowed') || 
+                             errStr.includes('interrupted') || 
+                             errStr.includes('abort') || 
+                             errMsg.includes('interrupted') || 
+                             errMsg.includes('abort');
+            if (isBenign) {
+              console.warn("Camera play request was interrupted or aborted (benign):", e.message || e);
             } else {
               console.error("Error playing video:", e);
               // Retry once after a short delay if it's a transient error
               setTimeout(() => {
                 videoRef.current?.play().catch(retryErr => {
-                  if (retryErr.name !== 'AbortError' && !retryErr.name?.includes('Abort') && !retryErr.message?.toLowerCase().includes('interrupted')) {
+                  const rStr = String(retryErr || '').toLowerCase();
+                  const rMsg = String(retryErr?.message || '').toLowerCase();
+                  const rName = String(retryErr?.name || '').toLowerCase();
+                  const rBenign = rName.includes('abort') || 
+                                  rName.includes('notallowed') || 
+                                  rStr.includes('interrupted') || 
+                                  rStr.includes('abort') || 
+                                  rMsg.includes('interrupted') || 
+                                  rMsg.includes('abort');
+                  if (!rBenign) {
                     console.error("Error during video play retry:", retryErr);
                   }
                 });
@@ -783,8 +801,17 @@ export default function App() {
     if (videoRef.current && streamRef.current && videoRef.current.srcObject !== streamRef.current) {
       videoRef.current.srcObject = streamRef.current;
       videoRef.current.play().catch(e => {
-        if (e.name === 'AbortError' || e.name?.includes('Abort') || e.message?.toLowerCase().includes('interrupted') || e.message?.toLowerCase().includes('abort')) {
-          console.warn("Camera play request in effect was interrupted or aborted (benign):", e.message);
+        const errStr = String(e || '').toLowerCase();
+        const errMsg = String(e?.message || '').toLowerCase();
+        const errName = String(e?.name || '').toLowerCase();
+        const isBenign = errName.includes('abort') || 
+                         errName.includes('notallowed') || 
+                         errStr.includes('interrupted') || 
+                         errStr.includes('abort') || 
+                         errMsg.includes('interrupted') || 
+                         errMsg.includes('abort');
+        if (isBenign) {
+          console.warn("Camera play request in effect was interrupted or aborted (benign):", e.message || e);
         } else {
           console.error("Error playing video in effect:", e);
         }
