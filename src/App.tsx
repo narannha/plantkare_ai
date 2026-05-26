@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, ReactNode } from 'react';
-import { Camera, History, Sparkles, Wind, Brain, Activity, RefreshCw, Palette, Coffee, User, Home, Settings, Layout, Languages, LogOut, UserPlus, Calendar, Smartphone, Bell, Download } from 'lucide-react';
+import { Camera, History, Sparkles, Wind, Brain, Activity, RefreshCw, Palette, Coffee, User, Home, Settings, Layout, Languages, LogOut, UserPlus, Calendar, Smartphone, Bell, Download, Share, PlusSquare, Check, X, Laptop } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import SplashAndClover from './components/SplashAndClover';
 import { initializeApp } from 'firebase/app';
@@ -588,6 +588,7 @@ export default function App() {
 
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [showInstallGuide, setShowInstallGuide] = useState(false);
 
   useEffect(() => {
     const checkInstalled = () => {
@@ -610,18 +611,20 @@ export default function App() {
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
-  const handleInstallClick = async () => {
+  const handleInstallClick = () => {
+    setShowInstallGuide(true);
+  };
+
+  const triggerNativePrompt = async () => {
     if (deferredPrompt) {
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
       console.log(`User response to the install prompt: ${outcome}`);
       if (outcome === 'accepted') {
         setDeferredPrompt(null);
+        setIsInstalled(true);
+        setShowInstallGuide(false);
       }
-    } else {
-      alert(lang === 'es' 
-        ? "Para instalar la aplicación, abre el menú de tu navegador y selecciona 'Añadir a la pantalla de inicio'."
-        : "To install the app, open your browser menu and select 'Add to Home Screen'.");
     }
   };
 
@@ -2077,6 +2080,174 @@ export default function App() {
           </svg>
         </button>
       )}
+
+      <AnimatePresence>
+        {showInstallGuide && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-navy-deep/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: "spring", duration: 0.4 }}
+              className={`w-full max-w-md ${theme === 'dark' ? 'bg-navy-deep text-white border-navy-light/30' : 'bg-white text-navy-deep border-navy-deep/20'} border-2 rounded-3xl overflow-hidden shadow-[0_12px_30px_rgba(0,0,0,0.25)] relative`}
+            >
+              {/* Header with Background Decorative Blob */}
+              <div className="bg-gradient-to-r from-pink-vibrant to-[#c2115e] p-6 text-white relative">
+                {/* Close Button */}
+                <button 
+                  onClick={() => setShowInstallGuide(false)}
+                  className="absolute top-4 right-4 bg-black/20 hover:bg-black/35 text-white p-1.5 rounded-full backdrop-blur-sm transition-all hover:scale-105 active:scale-95"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+                
+                <div className="flex items-center gap-3">
+                  <div className="bg-white/20 p-2 rounded-xl backdrop-blur-sm">
+                    <Download className="w-6 h-6 stroke-[2.5]" />
+                  </div>
+                  <div>
+                    <h3 className="font-sans font-black text-lg uppercase tracking-wide leading-none">
+                      {lang === 'es' ? 'Instalar BloomMind' : 'Install BloomMind'}
+                    </h3>
+                    <p className="text-[11px] text-white/85 font-medium mt-1">
+                      {lang === 'es' ? 'Disfruta como una aplicación nativa en tu celular' : 'Enjoy like a native mobile application'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-6 space-y-5 max-h-[60vh] overflow-y-auto">
+                {/* 1. Direct Native Prompt (If available) */}
+                {deferredPrompt ? (
+                  <div className="p-4 bg-pink-vibrant/10 rounded-2xl border border-pink-vibrant/30 text-center">
+                    <p className="text-xs font-bold mb-3 text-pink-700">
+                      {lang === 'es' 
+                        ? '¡Tu dispositivo permite la instalación automática!' 
+                        : 'Your device supports automatic installation!'}
+                    </p>
+                    <button 
+                      onClick={triggerNativePrompt}
+                      className="w-full bg-pink-vibrant hover:bg-[#ff5bb1] text-navy-deep font-black uppercase text-xs py-3 px-4 rounded-xl border-2 border-current shadow-[0_4px_0_currentColor] active:shadow-none active:translate-y-1 transition-all flex items-center justify-center gap-2 hover:scale-[1.02]"
+                    >
+                      <Sparkles className="w-4 h-4 fill-navy-deep animate-pulse" />
+                      {lang === 'es' ? 'Instalar Ahora Mismo' : 'Install Right Now'}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3 p-3 bg-stone-50 rounded-2xl border border-stone-200">
+                    <div className="w-10 h-10 rounded-full bg-lime-vibrant/10 flex items-center justify-center shrink-0">
+                      <Check className="w-5 h-5 text-lime-vibrant stroke-[2.5]" />
+                    </div>
+                    <div className="text-left">
+                      <h4 className="text-xs font-bold text-navy-deep">
+                        {lang === 'es' ? 'Optimizado para PWA' : 'Optimized for PWA'}
+                      </h4>
+                      <p className="text-[10px] text-stone-500 font-medium">
+                        {lang === 'es' ? 'Usa acceso offline rápido en celulares y computadoras' : 'Provides high-speed offline access on mobile and desktop'}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Guide Sections */}
+                <div className="space-y-4">
+                  <h4 className="text-[10px] font-black uppercase text-stone-400 tracking-wider">
+                    {lang === 'es' ? 'Opciones de Instalación Manual' : 'Manual Installation Options'}
+                  </h4>
+
+                  {/* iOS / Apple */}
+                  <div className="p-4 rounded-2xl border border-stone-100 bg-stone-50/50 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Smartphone className="w-4 h-4 text-[#007aff]" />
+                      <span className="text-xs font-bold text-navy-deep">
+                        {lang === 'es' ? 'En tu iPhone o iPad (Safari)' : 'On your iPhone or iPad (Safari)'}
+                      </span>
+                    </div>
+                    <ol className="text-xs space-y-3 text-stone-600 pl-1 list-decimal list-inside">
+                      <li>
+                        {lang === 'es' 
+                          ? 'Toca el botón de Compartir en la barra inferior de Safari.' 
+                          : 'Tap the Share icon in the bottom bar of Safari.'}
+                        <div className="inline-flex items-center justify-center bg-white border border-stone-200 p-1 rounded ml-1.5 shadow-sm align-middle">
+                          <Share className="w-3.5 h-3.5 text-[#007aff]" />
+                        </div>
+                      </li>
+                      <li>
+                        {lang === 'es' 
+                          ? 'Busca y selecciona "Agregar a pantalla de inicio".' 
+                          : 'Scroll and tap "Add to Home Screen".'}
+                        <div className="inline-flex items-center justify-center bg-white border border-stone-200 p-1 rounded ml-1.5 shadow-sm align-middle">
+                          <PlusSquare className="w-3.5 h-3.5 text-stone-800" />
+                        </div>
+                      </li>
+                      <li>
+                        {lang === 'es' 
+                          ? 'Toca "Agregar" en la esquina superior derecha.' 
+                          : 'Tap "Add" in the top-right corner to complete.'}
+                      </li>
+                    </ol>
+                  </div>
+
+                  {/* Android / Chrome */}
+                  <div className="p-4 rounded-2xl border border-stone-100 bg-stone-50/50 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Smartphone className="w-4 h-4 text-[#3ddc84]" />
+                      <span className="text-xs font-bold text-navy-deep">
+                        {lang === 'es' ? 'En tu Android (Chrome)' : 'On your Android (Chrome)'}
+                      </span>
+                    </div>
+                    <ol className="text-xs space-y-2 text-stone-600 pl-1 list-decimal list-inside">
+                      <li>
+                        {lang === 'es' 
+                          ? 'Toca los tres puntos arriba a la derecha de Chrome.' 
+                          : 'Tap the menu dots in Chrome\'s top-right corner.'}
+                      </li>
+                      <li>
+                        {lang === 'es' 
+                          ? 'Selecciona "Instalar aplicación" o "Instalar BloomMind".' 
+                          : 'Select "Install application" or "Install BloomMind" options.'}
+                      </li>
+                    </ol>
+                  </div>
+
+                  {/* Desktop / PC */}
+                  <div className="p-4 rounded-2xl border border-stone-100 bg-stone-50/50 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Laptop className="w-4 h-4 text-stone-500" />
+                      <span className="text-xs font-bold text-navy-deep">
+                        {lang === 'es' ? 'En Computadora (Chrome / Edge)' : 'On Desktop (Chrome / Edge)'}
+                      </span>
+                    </div>
+                    <ol className="text-xs space-y-2 text-stone-600 pl-1 list-decimal list-inside">
+                      <li>
+                        {lang === 'es' 
+                          ? 'Haz clic en el icono de descargas en la barra de direcciones superior.' 
+                          : 'Click the install icon in the top URL address bar.'}
+                      </li>
+                      <li>
+                        {lang === 'es' 
+                          ? 'O abre el menú y selecciona "Instalar BloomMind".' 
+                          : 'Or select "Install BloomMind" from the browser menu.'}
+                      </li>
+                    </ol>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="bg-stone-50 p-4 border-t border-stone-100 flex justify-end">
+                <button 
+                  onClick={() => setShowInstallGuide(false)}
+                  className="bg-navy-deep text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider hover:scale-105 active:scale-95 transition-transform"
+                >
+                  {lang === 'es' ? 'Entendido' : 'Got it'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
     </div>
   );
