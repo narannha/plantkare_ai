@@ -2011,7 +2011,7 @@ export default function App() {
       {activeTab !== 'scan' && (
         <button 
           onClick={handleInstallClick}
-          className="absolute bottom-[92px] right-[10%] sm:right-[58px] z-50 bg-white hover:bg-stone-50 text-navy-deep p-1.5 rounded-full border-2 border-current shadow-[0_4px_0_currentColor] active:shadow-none active:translate-y-1 transition-all flex items-center justify-center hover:scale-110 active:scale-95 group animate-bounce"
+          className="absolute bottom-[92px] right-[10%] sm:right-[58px] z-50 bg-white hover:bg-stone-50 text-navy-deep p-2.5 rounded-full border-2 border-current shadow-[0_5px_0_currentColor] active:shadow-none active:translate-y-1 transition-all flex items-center justify-center hover:scale-110 active:scale-95 group animate-bounce"
           title="Instalar App"
         >
           {/* Tooltip text showing on hover */}
@@ -2019,9 +2019,9 @@ export default function App() {
             <Sparkles className="w-3.5 h-3.5 text-lime-vibrant fill-lime-vibrant animate-pulse" />
             {lang === 'es' ? 'Descargar App Floral' : 'Download Floral App'}
           </span>
-
+          
           {/* Reference Image Inspired Icon Download App */}
-          <svg viewBox="0 0 100 100" className="w-11 h-11 select-none pointer-events-none">
+          <svg viewBox="0 0 100 100" className="w-14 h-14 select-none pointer-events-none">
             {/* Splash Blob Background in deep magenta */}
             <path 
               d="M 50,13 C 68,13 86,18 88,36 C 90,54 85,71 73,81 C 61,91 41,89 28,81 C 15,73 11,54 13,38 C 15,22 32,13 50,13 Z" 
