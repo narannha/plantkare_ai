@@ -51,21 +51,21 @@ export function WinkingClover({ className = 'w-48 h-48' }: { className?: string 
         id="winking-clover-svg"
       >
         {/* ================= BACKGROUND CLOVER (YELLOW MASCOT) ================= */}
-        {/* We build the four puffy, rounded clover lobes centred at (250, 250) */}
+        {/* We build the four puffy, rounded clover lobes centred at (250, 250) positioned Diagonally (X shape) */}
         <g id="main-clover-body">
           {/* Outlines of the lobes to give the perfect neo-brutalist border */}
-          <circle cx="250" cy="170" r="85" fill="#1e2b58" />
-          <circle cx="250" cy="330" r="85" fill="#1e2b58" />
-          <circle cx="170" cy="250" r="85" fill="#1e2b58" />
-          <circle cx="330" cy="250" r="85" fill="#1e2b58" />
-          <circle cx="250" cy="250" r="75" fill="#1e2b58" />
+          <circle cx="195" cy="195" r="100" fill="#1e2b58" />
+          <circle cx="305" cy="195" r="100" fill="#1e2b58" />
+          <circle cx="195" cy="305" r="100" fill="#1e2b58" />
+          <circle cx="305" cy="305" r="100" fill="#1e2b58" />
+          <circle cx="250" cy="250" r="90" fill="#1e2b58" />
 
           {/* Inner Yellow Fills (BloomMind Golden Yellow '#ffd02b') */}
-          <circle cx="250" cy="170" r="77" fill="#ffd02b" />
-          <circle cx="250" cy="330" r="77" fill="#ffd02b" />
-          <circle cx="170" cy="250" r="77" fill="#ffd02b" />
-          <circle cx="330" cy="250" r="77" fill="#ffd02b" />
-          <circle cx="250" cy="250" r="75" fill="#ffd02b" />
+          <circle cx="195" cy="195" r="92" fill="#ffd02b" />
+          <circle cx="305" cy="195" r="92" fill="#ffd02b" />
+          <circle cx="195" cy="305" r="92" fill="#ffd02b" />
+          <circle cx="305" cy="305" r="92" fill="#ffd02b" />
+          <circle cx="250" cy="250" r="88" fill="#ffd02b" />
         </g>
 
         {/* ================= CUTE FACIAL EXPRESSION ================= */}
@@ -93,7 +93,7 @@ export function WinkingClover({ className = 'w-48 h-48' }: { className?: string 
 
           {/* Soft blushing cheeks */}
           <circle cx="165" cy="268" r="12" fill="#ff8db8" opacity="0.65" />
-          <circle cx="320" cy="268" r="12" fill="#ff8db8" opacity="0.65" />
+          <circle cx="330" cy="268" r="12" fill="#ff8db8" opacity="0.65" />
         </g>
 
         {/* ================= WHITE GLEAMING SPARKLE (Top-Right Leaf) ================= */}
@@ -109,44 +109,46 @@ export function WinkingClover({ className = 'w-48 h-48' }: { className?: string 
 
         {/* ================= MINI BLUE FLOATING CLOVER (Top-Left) ================= */}
         <g id="mini-blue-clover" className="animate-float-blue" style={{ transformOrigin: '75px 105px' }}>
-          {/* Navy Outlines */}
-          <circle cx="75" cy="85" r="24" fill="#1e2b58" />
-          <circle cx="75" cy="125" r="24" fill="#1e2b58" />
-          <circle cx="55" cy="105" r="24" fill="#1e2b58" />
-          <circle cx="95" cy="105" r="24" fill="#1e2b58" />
-          <circle cx="75" cy="105" r="20" fill="#1e2b58" />
-          {/* Fills */}
-          <circle cx="75" cy="85" r="20" fill="#ccfb3c" />
-          <circle cx="75" cy="125" r="20" fill="#ccfb3c" />
-          <circle cx="55" cy="105" r="20" fill="#ccfb3c" />
-          <circle cx="95" cy="105" r="20" fill="#ccfb3c" />
-          <circle cx="75" cy="105" r="18" fill="#ccfb3c" />
+          {/* Navy Outlines (Diagonal X orientation) */}
+          <circle cx="63" cy="93" r="26" fill="#1e2b58" />
+          <circle cx="87" cy="93" r="26" fill="#1e2b58" />
+          <circle cx="63" cy="117" r="26" fill="#1e2b58" />
+          <circle cx="87" cy="117" r="26" fill="#1e2b58" />
+          <circle cx="75" cy="105" r="24" fill="#1e2b58" />
+          {/* Fills - Sky Blue Color to match reference image */}
+          <circle cx="63" cy="93" r="22" fill="#5bc1f5" />
+          <circle cx="87" cy="93" r="22" fill="#5bc1f5" />
+          <circle cx="63" cy="117" r="22" fill="#5bc1f5" />
+          <circle cx="87" cy="117" r="22" fill="#5bc1f5" />
+          <circle cx="75" cy="105" r="20" fill="#5bc1f5" />
           {/* Wink & Smile */}
           <circle cx="68" cy="103" r="4" fill="#1e2b58" />
           <path d="M 78 102 Q 82 98 84 102" stroke="#1e2b58" strokeWidth="2.5" fill="none" strokeLinecap="round" />
           <path d="M 72 113 Q 75 117 78 113" stroke="#1e2b58" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+          {/* Sparkle on mini blue */}
+          <circle cx="91" cy="91" r="3" fill="white" />
         </g>
 
         {/* ================= MINI PINK FLOATING CLOVER (Bottom-Right) ================= */}
         <g id="mini-pink-clover" className="animate-float-pink" style={{ transformOrigin: '420px 400px' }}>
-          {/* Navy Outlines */}
-          <circle cx="420" cy="380" r="24" fill="#1e2b58" />
-          <circle cx="420" cy="420" r="24" fill="#1e2b58" />
-          <circle cx="400" cy="400" r="24" fill="#1e2b58" />
-          <circle cx="440" cy="400" r="24" fill="#1e2b58" />
-          <circle cx="420" cy="400" r="20" fill="#1e2b58" />
-          {/* Fills */}
-          <circle cx="420" cy="380" r="20" fill="#ff5bb1" />
-          <circle cx="420" cy="420" r="20" fill="#ff5bb1" />
-          <circle cx="400" cy="400" r="20" fill="#ff5bb1" />
-          <circle cx="440" cy="400" r="20" fill="#ff5bb1" />
-          <circle cx="420" cy="400" r="18" fill="#ff5bb1" />
+          {/* Navy Outlines (Diagonal X orientation) */}
+          <circle cx="408" cy="388" r="26" fill="#1e2b58" />
+          <circle cx="432" cy="388" r="26" fill="#1e2b58" />
+          <circle cx="408" cy="412" r="26" fill="#1e2b58" />
+          <circle cx="432" cy="412" r="26" fill="#1e2b58" />
+          <circle cx="420" cy="400" r="24" fill="#1e2b58" />
+          {/* Fills - Pink Color to match reference image */}
+          <circle cx="408" cy="388" r="22" fill="#ff5bb1" />
+          <circle cx="432" cy="388" r="22" fill="#ff5bb1" />
+          <circle cx="408" cy="412" r="22" fill="#ff5bb1" />
+          <circle cx="432" cy="412" r="22" fill="#ff5bb1" />
+          <circle cx="420" cy="400" r="20" fill="#ff5bb1" />
           {/* Wink & Smile */}
           <circle cx="413" cy="398" r="4" fill="#1e2b58" />
           <path d="M 423 397 Q 427 393 429 397" stroke="#1e2b58" strokeWidth="2.5" fill="none" strokeLinecap="round" />
           <path d="M 417 408 Q 420 412 423 408" stroke="#1e2b58" strokeWidth="2.5" fill="none" strokeLinecap="round" />
           {/* Sparkle on mini pink */}
-          <circle cx="438" cy="382" r="3" fill="white" />
+          <circle cx="436" cy="386" r="3" fill="white" />
         </g>
       </svg>
     </div>

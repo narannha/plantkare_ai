@@ -501,8 +501,34 @@ const OnboardingModal = ({ isOpen, onClose, t }: { isOpen: boolean, onClose: () 
           <div className="absolute top-0 left-0 w-full h-4 bg-lime-vibrant" />
           
           <div className="text-center space-y-6">
-            <div className="w-20 h-20 bg-pink-vibrant rounded-full border-4 border-black mx-auto flex items-center justify-center shadow-[0_5px_0_black] overflow-hidden">
-              <img src="/icon-192.png" className="w-12 h-12 object-contain" alt="BloomMind Logo" referrerPolicy="no-referrer" />
+            <div className="w-20 h-20 bg-pink-vibrant rounded-full border-4 border-black mx-auto flex items-center justify-center shadow-[0_5px_0_black]">
+              <svg viewBox="0 0 100 100" className="w-14 h-14">
+                {/* Lobe circles to make it plump, diagonal/X orientation */}
+                <circle cx="39" cy="39" r="18" fill="#1e2b58" />
+                <circle cx="61" cy="39" r="18" fill="#1e2b58" />
+                <circle cx="39" cy="61" r="18" fill="#1e2b58" />
+                <circle cx="61" cy="61" r="18" fill="#1e2b58" />
+                <circle cx="50" cy="50" r="16" fill="#1e2b58" />
+
+                {/* Fills */}
+                <circle cx="39" cy="39" r="15" fill="#ffd02b" />
+                <circle cx="61" cy="39" r="15" fill="#ffd02b" />
+                <circle cx="39" cy="61" r="15" fill="#ffd02b" />
+                <circle cx="61" cy="61" r="15" fill="#ffd02b" />
+                <circle cx="50" cy="50" r="14" fill="#ffd02b" />
+
+                {/* Eye */}
+                <circle cx="42" cy="48" r="2.5" fill="#1e2b58" />
+                {/* Wink */}
+                <path d="M 54 47 C 55 45, 59 45, 60 47" stroke="#1e2b58" strokeWidth="2.2" strokeLinecap="round" fill="none" />
+                {/* Blush */}
+                <circle cx="37" cy="53" r="2" fill="#ff5bb1" opacity="0.65" />
+                <circle cx="63" cy="53" r="2" fill="#ff5bb1" opacity="0.65" />
+                {/* Mouth */}
+                <path d="M 46 54 C 48 57, 52 57, 54 54" stroke="#1e2b58" strokeWidth="2.2" strokeLinecap="round" fill="none" />
+                {/* Sparkle */}
+                <path d="M 62 30 L 64 34 L 68 35 L 64 36 L 62 40 L 60 36 L 56 35 L 60 34 Z" fill="white" stroke="#1e2b58" strokeWidth="1" />
+              </svg>
             </div>
             
             <h2 className="text-3xl font-black uppercase tracking-tighter leading-tight">
