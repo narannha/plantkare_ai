@@ -568,99 +568,6 @@ const OnboardingModal = ({ isOpen, onClose, t }: { isOpen: boolean, onClose: () 
   </AnimatePresence>
 );
 
-const PwaGuideModal = ({ isOpen, onClose, lang }: { isOpen: boolean, onClose: () => void, lang: 'es' | 'en' }) => (
-  <AnimatePresence>
-    {isOpen && (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
-        <motion.div 
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.9, opacity: 0 }}
-          className="bg-white text-navy-deep border-4 border-black rounded-[3.5rem] w-full max-w-sm p-8 shadow-[0_15px_0_black] relative overflow-hidden"
-        >
-          <div className="absolute top-0 left-0 w-full h-4 bg-pink-vibrant" />
-          
-          <div className="text-center space-y-4">
-            <div className="w-16 h-16 bg-lime-vibrant rounded-full border-4 border-black mx-auto flex items-center justify-center shadow-[0_5px_0_black]">
-              <Smartphone className="w-8 h-8 text-navy-deep animate-bounce" />
-            </div>
-            
-            <h2 className="text-2xl font-black uppercase tracking-tighter leading-tight">
-              {lang === 'es' ? 'Instalar BloomMind' : 'Install BloomMind'}
-            </h2>
-            
-            <p className="text-xs font-bold opacity-80 leading-snug">
-              {lang === 'es' 
-                ? 'Disfruta de una experiencia sin distracciones, pantalla completa y acceso offline agregando BloomMind a tu pantalla de inicio.' 
-                : 'Enjoy an app-like fullscreen experience with offline access by adding BloomMind to your home screen.'}
-            </p>
-            
-            <div className="bg-stone-50 p-4 rounded-3xl border-2 border-black text-left space-y-4 max-h-72 overflow-y-auto">
-              {/* iOS Safari */}
-              <div className="space-y-1.5 border-b-2 border-dashed border-stone-200 pb-3">
-                <div className="flex items-center space-x-2">
-                  <span className="text-[10px] font-black uppercase bg-[#ff5bb1] text-white px-2 py-0.5 rounded-full border-2 border-black shadow-[1.5px_1.5px_0_black]">iOS / Safari</span>
-                </div>
-                <p className="text-[11px] font-bold text-navy-deep leading-relaxed">
-                  {lang === 'es' 
-                    ? '1. Pulsa el botón Compartir (el ícono de flecha hacia arriba).' 
-                    : '1. Tap the Share button (the arrow icon at the navigation bar).'}
-                </p>
-                <p className="text-[11px] font-bold text-navy-deep leading-relaxed">
-                  {lang === 'es' 
-                    ? '2. Desplázate hacia abajo y selecciona "Agregar a pantalla de inicio".' 
-                    : '2. Scroll down and select "Add to Home Screen".'}
-                </p>
-              </div>
-
-              {/* Android Chrome */}
-              <div className="space-y-1.5 border-b-2 border-dashed border-stone-200 pb-3">
-                <div className="flex items-center space-x-2">
-                  <span className="text-[10px] font-black uppercase bg-[#7db1ff] text-white px-2 py-0.5 rounded-full border-2 border-black shadow-[1.5px_1.5px_0_black]">Android / Chrome</span>
-                </div>
-                <p className="text-[11px] font-bold text-navy-deep leading-relaxed">
-                  {lang === 'es' 
-                    ? '1. Presiona el ícono de tres puntos en la esquina superior derecha.' 
-                    : '1. Tap the three-dot menu icon in the upper right.'}
-                </p>
-                <p className="text-[11px] font-bold text-navy-deep leading-relaxed">
-                  {lang === 'es' 
-                    ? '2. Elige "Instalar aplicación" o "Agregar a pantalla principal".' 
-                    : '2. Select "Install App" or "Add to Home Screen".'}
-                </p>
-              </div>
-
-              {/* Windows / Mac */}
-              <div className="space-y-1.5">
-                <div className="flex items-center space-x-2">
-                  <span className="text-[10px] font-black uppercase bg-[#ffd02b] text-navy-deep px-2 py-0.5 rounded-full border-2 border-black shadow-[1.5px_1.5px_0_black]">PC / Mac</span>
-                </div>
-                <p className="text-[11px] font-bold text-navy-deep leading-relaxed">
-                  {lang === 'es' 
-                    ? '1. Busca el botón circular (+) o de monitor con flecha en la barra de direcciones de tu navegador.' 
-                    : '1. Look for the circular (+) or screen arrow button in your browser address bar.'}
-                </p>
-                <p className="text-[11px] font-bold text-navy-deep leading-relaxed">
-                  {lang === 'es' 
-                    ? '2. Haz clic en "Instalar" para crear un acceso directo.' 
-                    : '2. Click "Install" to create a standard desktop app.'}
-                </p>
-              </div>
-            </div>
-
-            <button 
-              onClick={onClose}
-              className="w-full py-3 bg-[#7db1ff] hover:bg-blue-300 text-black font-black uppercase rounded-2xl border-2 border-black shadow-[0_4px_0_black] active:shadow-none active:translate-y-1 transition-all text-xs"
-            >
-              {lang === 'es' ? '¡Entendido!' : 'Got it!'}
-            </button>
-          </div>
-        </motion.div>
-      </div>
-    )}
-  </AnimatePresence>
-);
-
 export default function App() {
   const [lang, setLang] = useState<Language>('es');
   const t = translations[lang];
@@ -683,7 +590,6 @@ export default function App() {
   const [isInstalled, setIsInstalled] = useState(false);
   const [showPwaBanner, setShowPwaBanner] = useState(true);
   const [isQuotaExceeded, setIsQuotaExceeded] = useState(false);
-  const [showPwaGuide, setShowPwaGuide] = useState(false);
 
   useEffect(() => {
     const checkInstalled = () => {
@@ -715,7 +621,16 @@ export default function App() {
         setDeferredPrompt(null);
       }
     } else {
-      setShowPwaGuide(true);
+      const isIframe = window.self !== window.top;
+      if (isIframe) {
+        alert(lang === 'es' 
+          ? 'Para instalar la aplicación, por favor abre BloomMind en una pestaña nueva (fuera del editor) para que el navegador permita la instalación.' 
+          : 'To install the application, please open BloomMind in a new tab (outside the editor) so the browser permits installation.');
+      } else {
+        alert(lang === 'es'
+          ? 'Para instalar:\n- En Android/Chrome: toca el menú de los 3 puntos y elige "Instalar".\n- En iOS/Safari: toca Compartir y elige "Agregar a pantalla de inicio".\n- En PC: haz clic en el ícono de instalar en la barra de direcciones del navegador.'
+          : 'To install:\n- On Android/Chrome: tap the 3-dot menu and select "Install".\n- On iOS/Safari: tap Share and select "Add to Home Screen".\n- On PC: click the install icon in your browser address bar.');
+      }
     }
   };
 
@@ -1777,8 +1692,6 @@ export default function App() {
       </AnimatePresence>
 
       <OnboardingModal isOpen={showOnboarding && !showSplash} onClose={() => setShowOnboarding(false)} t={t} />
-
-      <PwaGuideModal isOpen={showPwaGuide} onClose={() => setShowPwaGuide(false)} lang={lang} />
 
       {isQuotaExceeded && (
         <motion.div 
