@@ -1568,25 +1568,7 @@ export default function App() {
               <span>{lang === 'es' ? 'Activar Recordatorio Diario' : 'Enable Daily Reminder'}</span>
             </button>
 
-            {/* PWA Download Banner in Profile */}
-            {!isInstalled && (
-              <div className={`p-4 rounded-3xl border-2 border-dashed border-current ${theme === 'dark' ? 'bg-[#7db1ff]/10 text-white' : 'bg-lime-vibrant/10 text-navy-deep'} flex flex-col items-center text-center space-y-2 mt-4`}>
-                <div className="flex items-center gap-1.5 justify-center">
-                  <Smartphone className="w-5 h-5 text-[#ff5bb1] animate-pulse" />
-                  <span className="text-xs font-black uppercase tracking-wider">{lang === 'es' ? 'Descargar App Floral' : 'Download Floral App'}</span>
-                </div>
-                <p className="text-[10px] font-bold opacity-80 leading-normal max-w-[260px] mx-auto">
-                  {lang === 'es' ? 'Instala BloomMind en tu pantalla de inicio para mayor comodidad y rapidez.' : 'Install BloomMind on your home screen for greater ease and speed.'}
-                </p>
-                <button
-                  onClick={handleInstallClick}
-                  className="mt-1 px-4 py-2.5 bg-lime-vibrant hover:bg-lime-300 text-black text-xs font-black uppercase rounded-2xl border-2 border-black shadow-[0_3.5px_0_black] active:shadow-none active:translate-y-0.5 transition-all w-full flex items-center justify-center gap-1.5"
-                >
-                  <Download className="w-4 h-4" />
-                  {lang === 'es' ? 'Instalar Aplicación' : 'Install Application'}
-                </button>
-              </div>
-            )}
+
 
             <button 
               onClick={handleLogout}
