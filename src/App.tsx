@@ -2034,7 +2034,7 @@ export default function App() {
                         const dayStr = getColombiaDateString(targetDate);
                         const dayNum = targetDate.getDate();
                         const dayName = (lang === 'es' ? ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'] : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'])[targetDate.getDay()];
-                        const monthShort = (lang === 'es' ? ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'] : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dic'])[targetDate.getMonth()];
+                        const monthShort = (lang === 'es' ? ['Ene', 'Feb', 'Mar', 'Abr', 'Mayo', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'] : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dic'])[targetDate.getMonth()];
                         
                         const isTodayString = getColombiaDateString(new Date());
                         const isToday = isTodayString === dayStr;
@@ -2055,12 +2055,12 @@ export default function App() {
                             className={`flex-shrink-0 w-14 h-20 rounded-2xl border-2 border-current flex flex-col items-center justify-center transition-all relative ${
                               isSelected 
                                 ? 'bg-blue-vibrant text-white shadow-[0_4px_0_currentColor]' 
-                                : (theme === 'dark' ? 'bg-white/10 text-white' : 'bg-lime-vibrant text-navy-deep')
+                               : (theme === 'dark' ? 'bg-white/10 text-white' : 'bg-lime-vibrant text-navy-deep')
                             }`}
                           >
-                            <span className="text-[10px] font-black uppercase opacity-60">{dayName}</span>
+                            <span className="text-[10px] font-black uppercase opacity-60 notranslate" translate="no">{dayName}</span>
                             <span className="text-xl font-black">{dayNum}</span>
-                            <span className="text-[8px] font-black uppercase">{monthShort}</span>
+                            <span className="text-[8px] font-black uppercase notranslate" translate="no">{monthShort}</span>
                             {isToday && <div className="absolute -top-1 -right-1 w-3 h-3 bg-pink-vibrant rounded-full border border-black z-10" />}
                           </motion.button>
                         );
