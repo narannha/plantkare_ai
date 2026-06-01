@@ -586,7 +586,7 @@ export default function App() {
   const [trackerMonth, setTrackerMonth] = useState(new Date(new Date().toLocaleString("en-US", { timeZone: "America/Bogota" })).getMonth());
   const trackerYear = 2026;
 
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>((window as any).deferredPrompt || null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [showPwaBanner, setShowPwaBanner] = useState(true);
   const [isQuotaExceeded, setIsQuotaExceeded] = useState(false);
@@ -603,34 +603,42 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if ((window as any).deferredPrompt) {
+      setDeferredPrompt((window as any).deferredPrompt);
+    }
+
     const handler = (e: any) => {
-      console.log('beforeinstallprompt fired');
+      console.log('beforeinstallprompt fired in App');
       e.preventDefault();
       setDeferredPrompt(e);
+      (window as any).deferredPrompt = e;
     };
+
+    const customHandler = (e: Event) => {
+      console.log('pwa-prompt-available event received in App');
+      const eventPrompt = (e as CustomEvent).detail;
+      setDeferredPrompt(eventPrompt);
+    };
+
     window.addEventListener('beforeinstallprompt', handler);
-    return () => window.removeEventListener('beforeinstallprompt', handler);
+    window.addEventListener('pwa-prompt-available', customHandler);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler);
+      window.removeEventListener('pwa-prompt-available', customHandler);
+    };
   }, []);
 
   const handleInstallClick = async () => {
     if (deferredPrompt) {
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
-      console.log(`User response to the install prompt: ${outcome}`);
+      console.log(`User response to prompt: ${outcome}`);
       if (outcome === 'accepted') {
         setDeferredPrompt(null);
+        (window as any).deferredPrompt = null;
       }
     } else {
-      const isIframe = window.self !== window.top;
-      if (isIframe) {
-        alert(lang === 'es' 
-          ? 'Para instalar la aplicación, por favor abre BloomMind en una pestaña nueva (fuera del editor) para que el navegador permita la instalación.' 
-          : 'To install the application, please open BloomMind in a new tab (outside the editor) so the browser permits installation.');
-      } else {
-        alert(lang === 'es'
-          ? 'Para instalar:\n- En Android/Chrome: toca el menú de los 3 puntos y elige "Instalar".\n- En iOS/Safari: toca Compartir y elige "Agregar a pantalla de inicio".\n- En PC: haz clic en el ícono de instalar en la barra de direcciones del navegador.'
-          : 'To install:\n- On Android/Chrome: tap the 3-dot menu and select "Install".\n- On iOS/Safari: tap Share and select "Add to Home Screen".\n- On PC: click the install icon in your browser address bar.');
-      }
+      console.log("Install prompt is not yet ready or PWA is already installed.");
     }
   };
 

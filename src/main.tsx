@@ -27,6 +27,14 @@ class ErrorBoundary extends Component<{children: ReactNode}, {hasError: boolean,
   }
 }
 
+// Guardar el evento de instalación tan pronto como ocurra para no perderlo si ocurre antes de que monte React
+window.addEventListener('beforeinstallprompt', (e) => {
+  console.log('Main.tsx captured early beforeinstallprompt');
+  e.preventDefault();
+  (window as any).deferredPrompt = e;
+  window.dispatchEvent(new CustomEvent('pwa-prompt-available', { detail: e }));
+});
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').then((registration) => {
