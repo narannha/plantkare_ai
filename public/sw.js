@@ -1,10 +1,9 @@
 const CACHE_NAME = 'bloommind-v3';
 const URLS_TO_CACHE = [
   '/',
-  '/index.html',
   '/manifest.json',
-  '/icon-192.png?v=3',
-  '/icon-512.png?v=3'
+  '/icon-192.jpg?v=3',
+  '/icon-512.jpg?v=3'
 ];
 
 self.addEventListener('install', (event) => {
