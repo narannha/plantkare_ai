@@ -652,7 +652,31 @@ export default function App() {
         console.error("Error triggering install prompt: ", err);
       }
     } else {
-      console.log("Install prompt is not yet ready or PWA is already installed.");
+      // Check if already installed
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone;
+      if (isStandalone) {
+        alert(lang === 'es' 
+          ? '¡BloomMind ya está instalada!' 
+          : 'BloomMind is already installed!'
+        );
+        return;
+      }
+
+      // Check if it is iOS (iPhone/iPad/iPod)
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+      if (isIOS) {
+        alert(lang === 'es' 
+          ? 'Para instalar BloomMind en tu iPhone/iPad:\n1. Toca el botón de Compartir (icono de la caja con una flecha hacia arriba) en Safari.\n2. Desplázate y selecciona "Agregar a pantalla de inicio" del menú.'
+          : 'To install BloomMind on your iPhone/iPad:\n1. Tap the Share button (box with an up arrow icon) in Safari.\n2. Scroll down and select "Add to Home Screen" from the menu.'
+        );
+      } else {
+        alert(lang === 'es'
+          ? 'Para instalar BloomMind:\n1. Abre el menú del navegador (tres puntos en la esquina superior derecha).\n2. Selecciona "Instalar aplicación" o "Agregar a pantalla de inicio".'
+          : 'To install BloomMind:\n1. Open the browser menu (three dots in the top-right corner).\n2. Select "Install app" or "Add to Home Screen".'
+        );
+      }
     }
   };
 
