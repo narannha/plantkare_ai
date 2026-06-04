@@ -590,7 +590,6 @@ export default function App() {
   const [isInstalled, setIsInstalled] = useState(false);
   const [showPwaBanner, setShowPwaBanner] = useState(true);
   const [isQuotaExceeded, setIsQuotaExceeded] = useState(false);
-  const [pwaToast, setPwaToast] = useState<{ show: boolean, message: string }>({ show: false, message: '' });
 
   useEffect(() => {
     const checkInstalled = () => {
@@ -654,36 +653,6 @@ export default function App() {
       }
     } else {
       console.log("Install prompt is not yet ready or PWA is already installed.");
-      
-      const isIframe = window.self !== window.top;
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && 'ontouchend' in document);
-      
-      let msg = '';
-      if (isIframe) {
-        msg = lang === 'es' 
-          ? '¡Por seguridad, abre BloomMind en una pestaña nueva (con el botón arriba a la derecha) para poder instalarla!' 
-          : 'For security, please open BloomMind in a new tab (using the button in the top right) to install it!';
-      } else if (isIOS) {
-        msg = lang === 'es'
-          ? '¡Instala en tu iPhone! Toca Compartir (icono con flecha arriba) en Safari y selecciona "Agregar a pantalla de inicio".'
-          : 'Install on your iPhone! Tap Share (up arrow icon) in Safari and select "Add to Home Screen".';
-      } else {
-        msg = lang === 'es'
-          ? 'Instala desde la barra de direcciones de tu navegador (haz clic en el icono "+" o de pantalla) o en el menú de opciones.'
-          : 'Install from your browser\'s address bar (click the "+" or screen icon) or the option menu.';
-      }
-      
-      setPwaToast({ show: true, message: msg });
-      
-      // Automatically hide toast after 6 seconds
-      setTimeout(() => {
-        setPwaToast(current => {
-          if (current.message === msg) {
-            return { show: false, message: '' };
-          }
-          return current;
-        });
-      }, 6000);
     }
   };
 
@@ -1745,31 +1714,6 @@ export default function App() {
       </AnimatePresence>
 
       <OnboardingModal isOpen={showOnboarding && !showSplash} onClose={() => setShowOnboarding(false)} t={t} />
-
-      <AnimatePresence>
-        {pwaToast.show && (
-          <motion.div
-            initial={{ opacity: 0, y: 30, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -20, scale: 0.95 }}
-            className={`absolute bottom-28 left-6 right-6 ${theme === 'dark' ? 'bg-[#2a3c75] text-white border-blue-vibrant shadow-[0_5px_0_#7db1ff]' : 'bg-white text-navy-deep border-black shadow-[0_5px_0_black]'} border-2 p-4 rounded-[1.5rem] z-50 flex items-start gap-3 select-none text-left`}
-          >
-            <div className={`p-1.5 rounded-full flex items-center justify-center self-start ${theme === 'dark' ? 'bg-white/10 text-lime-vibrant' : 'bg-lime-vibrant text-black border border-black'}`}>
-              <Sparkles className="w-4 h-4 fill-current" />
-            </div>
-            <div className="flex-1 space-y-1">
-              <h5 className="text-[10px] font-black uppercase tracking-widest opacity-60">PWA INSTALL</h5>
-              <p className="text-[11px] font-bold leading-snug">{pwaToast.message}</p>
-            </div>
-            <button 
-              onClick={() => setPwaToast({ show: false, message: '' })}
-              className="text-current/60 hover:text-current hover:bg-current/10 p-1 rounded-full transition-all self-start cursor-pointer"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {isQuotaExceeded && (
         <motion.div 
