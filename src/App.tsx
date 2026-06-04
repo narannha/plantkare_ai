@@ -667,8 +667,8 @@ export default function App() {
         navigator.serviceWorker.ready.then((registration) => {
           registration.showNotification('BloomMind', {
             body: lang === 'es' ? '¡Es hora de tu escaneo de Aura!' : 'Time for your Aura scan!',
-            icon: '/icon-192.png',
-            badge: '/icon-192.png',
+            icon: '/icon-192.jpg',
+            badge: '/icon-192.jpg',
           });
         });
       }
