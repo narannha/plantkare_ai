@@ -6,7 +6,7 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { getFirestore, collection, doc, setDoc, onSnapshot, getDocFromServer, query, orderBy } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
-import iconDownloadApp from './assets/images/icon_downloadapp_1779809929680.png';
+import iconDownloadApp from './assets/images/icon-512';
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
@@ -638,7 +638,7 @@ export default function App() {
     };
   }, []);
 
-  const handleInstallClick = async () => {
+    const handleInstallClick = async () => {
     if (deferredPrompt) {
       try {
         deferredPrompt.prompt();
@@ -679,7 +679,7 @@ export default function App() {
       }
     }
   };
-
+  
   const requestNotificationPermission = async () => {
     if (!('Notification' in window)) {
       alert(lang === 'es' ? 'Este navegador no soporta notificaciones de escritorio' : 'This browser does not support desktop notifications');
@@ -691,8 +691,8 @@ export default function App() {
         navigator.serviceWorker.ready.then((registration) => {
           registration.showNotification('BloomMind', {
             body: lang === 'es' ? '¡Es hora de tu escaneo de Aura!' : 'Time for your Aura scan!',
-            icon: '/icon-192.png',
-            badge: '/icon-192.png',
+            icon: '/icon-192.jpg',
+            badge: '/icon-192.jpg',
           });
         });
       }
