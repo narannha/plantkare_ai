@@ -4,6 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>BloomMind</title>
+    <script>
+      // Capture beforeinstallprompt immediately, before any modules load
+      window.addEventListener('beforeinstallprompt', (e) => {
+        console.log('index.html early captured beforeinstallprompt');
+        e.preventDefault();
+        window.deferredPrompt = e;
+        // Dispatch custom event in case front-end has already mounted
+        window.dispatchEvent(new CustomEvent('pwa-prompt-available', { detail: e }));
+      });
+    </script>
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#1e2b58" />
     <meta name="mobile-web-app-capable" content="yes" />
